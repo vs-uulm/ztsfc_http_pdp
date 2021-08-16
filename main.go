@@ -1,27 +1,27 @@
 package main
 
 import (
-    "net/http"
-    "os"
-    "fmt"
-    router "local.com/leobrada/ztsfc_http_pdp/router"
+	"fmt"
+	router "local.com/leobrada/ztsfc_http_pdp/router"
+	"net/http"
+	"os"
 )
 
 //func init() {
-//    
+//
 //}
 
 func main() {
-    router := router.NewRouter()
-    if router == nil {
-        fmt.Printf("BOHOOO\n")
-        os.Exit(1)
-    }
+	router := router.NewRouter()
+	if router == nil {
+		fmt.Printf("BOHOOO\n")
+		os.Exit(1)
+	}
 
-    http.Handle("/", router)
+	http.Handle("/", router)
 
-    err := router.ListenAndServeTLS()
-    if err != nil {
-        fmt.Printf("ListenAndServeTLS Error\n")
-    }
+	err := router.ListenAndServeTLS()
+	if err != nil {
+		fmt.Printf("ListenAndServeTLS Error\n")
+	}
 }
