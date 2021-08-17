@@ -3,6 +3,7 @@ package router
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -74,17 +75,25 @@ func NewRouter() *Router {
 	return router
 }
 
+type authResponse struct {
+	allow bool
+	sfc   []string
+}
+
 func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	//fmt.Printf("%+v\n", req.Header)
+
 	md := new(metadata.Cp_metadata)
-
 	md.ExtractMetadata(req)
+	sfc, allow := autho.PerformAuthorization(md)
 
-	sfc, block := autho.PerformAuthorization(md)
-	w.Header().Set("sfc", sfc)
-	w.Header().Set("allow", block)
-	//fmt.Printf("%+v\n", md)
-	fmt.Fprintf(w, "")
+	// @author:marie
+	// assemble a json response for the request and set header respectively
+	w.Header().Set("Content-Type", "application/json")
+	response := authResponse{
+		allow: allow,
+		sfc:   sfc,
+	}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (router *Router) ListenAndServeTLS() error {
