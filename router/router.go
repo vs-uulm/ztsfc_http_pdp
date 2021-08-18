@@ -76,8 +76,8 @@ func NewRouter() *Router {
 }
 
 type authResponse struct {
-	allow bool
-	sfc   []string
+	Allow bool     `json:"allow"`
+	Sfc   []string `json:"sfc"`
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -90,8 +90,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// assemble a json response for the request and set header respectively
 	w.Header().Set("Content-Type", "application/json")
 	response := authResponse{
-		allow: allow,
-		sfc:   sfc,
+		Allow: allow,
+		Sfc:   sfc,
 	}
 	json.NewEncoder(w).Encode(response)
 }
