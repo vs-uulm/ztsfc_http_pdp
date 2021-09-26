@@ -26,9 +26,9 @@ func NewRouter() (*Router) {
     router := new(Router)
 
     // Initialize Certificates
-    router.router_cert_shown_to_clients, _ = tls.LoadX509KeyPair("./certs/srv2_basicAuth.crt", "./certs/srv2_basicAuth_priv.key")
+    router.router_cert_shown_to_clients, _ = tls.LoadX509KeyPair("./certs/ztsfc_pdp_prototype.crt", "./certs/ztsfc_pdp_prototype_priv.key")
     router.certs_that_router_accepts = x509.NewCertPool()
-    ca_cert, err := ioutil.ReadFile("./certs/ca_pool.pem")
+    ca_cert, err := ioutil.ReadFile("./certs/bwnet_root.pem")
     if err != nil {
         fmt.Printf("[Router.makeCAPool]: ReadFile: ", err)
         return nil
@@ -76,7 +76,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     sfc, block := autho.PerformAuthorization(md)
     w.Header().Set("sfc", sfc)
     w.Header().Set("allow", block)
-    //fmt.Printf("%+v\n", md)
+    fmt.Printf("%+v\n", md)
     fmt.Fprintf(w, "")
 }
 

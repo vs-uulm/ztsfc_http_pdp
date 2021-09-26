@@ -61,7 +61,8 @@ func PerformAuthorization(cpm *md.Cp_metadata) (forwardSFC string, allow string)
     } else if (aggregatedTrust + trustCalc.dpiTrustIncrease) >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
         return "dpi", "true"
     } else if (aggregatedTrust + trustCalc.loggerTrustIncrease + trustCalc.dpiTrustIncrease) >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
-        return "logger,dpi", "true"
+//        return "logger,dpi", "true"
+        return "dpi,logger", "true"
     } else {
         return "", "false"
     }
