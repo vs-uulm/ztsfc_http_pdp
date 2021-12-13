@@ -76,7 +76,7 @@ func NewRouter() *Router {
 
 	return router
 }
-md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+
 type authResponse struct {
 	Allow bool     `json:"allow"`
 	Sfc   []string `json:"sfc"`
