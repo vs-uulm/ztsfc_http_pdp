@@ -4,9 +4,11 @@ import (
 	"net/http"
     "flag"
     "log"
+    "crypto/x509"
 
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
+    ini "github.com/vs-uulm/ztsfc_http_pdp/internal/app/init"
     logger "github.com/vs-uulm/ztsfc_http_logger"
 )
 
@@ -35,9 +37,11 @@ func init() {
         log.Fatalf("main: init(): could not initialize logger: %w", err)
     }
 
-    init.InitSysLoggerParams()
+    config.Config.Pdp.CaCertPoolPdpAcceptsFromPep = x509.NewCertPool()
 
-    if err = init.InitPdpParams(); err != nil {
+    ini.InitSysLoggerParams()
+
+    if err = ini.InitPdpParams(); err != nil {
         sysLogger.Fatalf("main: init(): could not initialize PDP params: %w", err)
     }
 

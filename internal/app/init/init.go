@@ -1,9 +1,12 @@
 package init
 
 import (
+    "fmt"
     "crypto/tls"
     "crypto/x509"
     "io/ioutil"
+
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 )
 
 func InitSysLoggerParams() {
@@ -21,7 +24,6 @@ func InitSysLoggerParams() {
 }
 
 func InitPdpParams() error {
-    section := "pdp"
     fields := ""
     var err error
 
@@ -38,13 +40,13 @@ func InitPdpParams() error {
         fields += "cert_shown_by_pdp_to_pep"
     }
 
-    if config.Config.Pdp.PrivkeyForCertsShownByPdpToPep = "" {
+    if config.Config.Pdp.PrivkeyForCertsShownByPdpToPep == "" {
         fields += "privkey_for_certs_shown_by_pdp_to_pep"
     }
 
     // Read CA certs used for signing client certs and are accepted by the PEP
     for _, acceptedPepCert := range config.Config.Pdp.CertsPdpAcceptsWhenShownByPep {
-        if err = loadCACertificate(acceptedClientCert, "client", config.Config.Pdp.CertsPdpAcceptsWhenShownByPep); err != nil {
+        if err = loadCACertificate(acceptedPepCert, "client", config.Config.Pdp.CaCertPoolPdpAcceptsFromPep); err != nil {
             return fmt.Errorf("init: InitPdpParams(): error loading certificates PDP accepts from PEP: %w", err)
         }
     }
@@ -74,7 +76,7 @@ func loadCACertificate(certfile string, componentName string, certPool *x509.Cer
 func loadX509KeyPair(certfile, keyfile, componentName, certAttr string) (tls.Certificate, error) {
     keyPair, err := tls.LoadX509KeyPair(certfile, keyfile)
     if err != nil {
-        return nil, fmt.Errorf("loadX509KeyPair(): critical error when loading %s X509KeyPair for %s from %s and %s: %v", certAttr, componentName, certfile, keyfile, err)
+        return keyPair, fmt.Errorf("loadX509KeyPair(): critical error when loading %s X509KeyPair for %s from %s and %s: %v", certAttr, componentName, certfile, keyfile, err)
     }
 
     //else {

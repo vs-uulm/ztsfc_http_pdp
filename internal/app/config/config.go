@@ -31,7 +31,7 @@ type PdpT struct {
     CertShownByPdpToPep string  `yaml:"cert_shown_by_pdp_to_pep"`
     PrivkeyForCertsShownByPdpToPep  string  `yaml:"privkey_for_certs_shown_by_pdp_to_pep"`
 
-    CaCertPoolPdpAcceptsfromPdp *x509.CertPool
+    CaCertPoolPdpAcceptsFromPep *x509.CertPool
     X509KeyPairShownByPdpToPep  tls.Certificate
 }
 
