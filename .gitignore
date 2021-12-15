@@ -16,3 +16,4 @@
 ./cmd/ztsfc_http_pdp/main
 certs/*
 !certs/.gitkeep
+*.swp
