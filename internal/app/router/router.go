@@ -8,10 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	// autho "local.com/leobrada/ztsfc_http_pdp/authorization"
     autho "github.com/vs-uulm/ztsfc_http_pdp/internal/app/authorization"
-	// metadata "local.com/leobrada/ztsfc_http_pdp/metadata"
-    metadata "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 )
 
 const (
@@ -29,7 +28,7 @@ type Router struct {
 	//    md         *metadata.Cp_metadata
 }
 
-func NewRouter() *Router {
+func NewRouter() (*Router, error) {
 
 	// Create new Router
 	router := new(Router)
@@ -39,13 +38,11 @@ func NewRouter() *Router {
 	router.certs_that_router_accepts = x509.NewCertPool()
 	ca_cert, err := ioutil.ReadFile("./certs/bwnet_root.pem")
 	if err != nil {
-		fmt.Printf("[Router.makeCAPool]: ReadFile: ", err)
-		return nil
+		return nil, fmt.Errorf("router: NewRouter(): could not read file: %w", err)
 	}
 	ok := router.certs_that_router_accepts.AppendCertsFromPEM(ca_cert)
 	if !ok {
-		fmt.Printf("[Router.makeCAPool]: AppendCertsFromPEM: ", err)
-		return nil
+		return nil, fmt.Errorf("router: NewRouter(): could not add certificate to cert pool the PDP")
 	}
 
 	// Create TLS config for frontend server
@@ -66,15 +63,14 @@ func NewRouter() *Router {
 
 	// Create HTTP frontend server
 	router.frontend_server = &http.Server{
-		Addr:      ":8888",
-		// Addr:      "10.4.0.52:8888",
+		Addr:      config.Config.Pdp.ListenAddr,
 		TLSConfig: router.frontend_tls_config,
 		Handler:   mux,
 	}
 
 	//  router.md = new(metadata.Cp_metadata)
 
-	return router
+	return router, nil
 }
 
 type authResponse struct {

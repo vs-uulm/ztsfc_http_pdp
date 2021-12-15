@@ -1,12 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-	"os"
+    "flag"
+    "log"
 
-    "github.com/vs-uulm/ztsfc_http_pep/internal/app/config"
-    router "github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
+    logger "github.com/vs-uulm/ztsfc_http_logger"
+)
+
+var (
+    sysLogger *logger.Logger
 )
 
 func init() {
@@ -15,25 +20,40 @@ func init() {
     flag.StringVar(&confFilePath, "c", "./config/conf.yml", "Path to user defined yaml config file")
     flag.Parse()
 
-    err := config.LoadConfig(confFilePath)
+    err := config.LoadConfig(confFilePath, &config.Config)
     if err != nil {
-        fmt.Fatalf("main: could not load config: %w", err)
+        log.Fatalf("main: init(): could not load config: %w", err)
     }
 
-    fmt.Printf("Config.Config.Pdp.ListenAddr: "config.Config.Pdp.ListenAddr)
+    sysLogger, err = logger.New(config.Config.SysLogger.LogFilePath,
+        config.Config.SysLogger.LogLevel,
+        config.Config.SysLogger.IfTextFormatter,
+        logger.Fields{"type":"system"},
+    )
+
+    if err != nil {
+        log.Fatalf("main: init(): could not initialize logger: %w", err)
+    }
+
+    init.InitSysLoggerParams()
+
+    if err = init.InitPdpParams(); err != nil {
+        sysLogger.Fatalf("main: init(): could not initialize PDP params: %w", err)
+    }
+
+    sysLogger.Info("main: init(): initialization process successfully completed")
 }
 
 func main() {
-	router := router.NewRouter()
-	if router == nil {
-		fmt.Printf("BOHOOO\n")
-		os.Exit(1)
+	router, err := router.NewRouter()
+	if err != nil {
+		sysLogger.Fatalf("main: main(): error loading router: %w", err)
 	}
 
 	http.Handle("/", router)
 
-	err := router.ListenAndServeTLS()
+	err = router.ListenAndServeTLS()
 	if err != nil {
-		fmt.Printf("ListenAndServeTLS Error\n")
+		sysLogger.Fatalf("main: main(): listen and serve failed: %w", err)
 	}
 }

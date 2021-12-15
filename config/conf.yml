@@ -1,0 +1,13 @@
+system_logger:
+  system_logger_logging_level: debug
+  system_logger_destination: stdout
+  system_logger_format: text
+
+pdp:
+  listen_addr: "134.60.92.41:443"
+  certs_pep_accepts_when_shown_by_pep:
+    - ./certs/bwnet_root.crt
+  cert_shown_by_pdp_to_pep:
+    - ./certs/ztsfc_pdp_prototype.crt
+  privkey_for_certs_shown_by_pdp_to_pep:
+    - ./certs/ztsfc_pdp_prototype_priv.key
