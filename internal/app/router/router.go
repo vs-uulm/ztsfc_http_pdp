@@ -6,6 +6,7 @@ import (
 	"net/http"
 
     autho "github.com/vs-uulm/ztsfc_http_pdp/internal/app/authorization"
+    logger "github.com/vs-uulm/ztsfc_http_logger"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 )
@@ -18,12 +19,16 @@ const (
 type Router struct {
 	frontend_tls_config *tls.Config
 	frontend_server     *http.Server
+
+    sysLogger           *logger.Logger
 }
 
-func NewRouter() *Router {
+func NewRouter(sysLogger *logger.Logger) *Router {
 
 	// Create new Router
 	router := new(Router)
+
+    router.sysLogger = sysLogger
 
 	// Create TLS config for frontend server
 	router.frontend_tls_config = &tls.Config{
