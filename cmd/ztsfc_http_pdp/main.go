@@ -49,14 +49,11 @@ func init() {
 }
 
 func main() {
-	router, err := router.NewRouter()
-	if err != nil {
-		sysLogger.Fatalf("main: main(): error loading router: %w", err)
-	}
+	router := router.NewRouter()
 
 	http.Handle("/", router)
 
-	err = router.ListenAndServeTLS()
+	err := router.ListenAndServeTLS()
 	if err != nil {
 		sysLogger.Fatalf("main: main(): listen and serve failed: %w", err)
 	}
