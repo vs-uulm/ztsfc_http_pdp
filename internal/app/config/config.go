@@ -1,13 +1,13 @@
 package config
 
 import (
-    "os"
-    "fmt"
-    "errors"
+//    "os"
+//    "fmt"
+//    "errors"
     "crypto/x509"
     "crypto/tls"
 
-    "gopkg.in/yaml.v2"
+//    "gopkg.in/yaml.v3"
 )
 
 var (
@@ -35,27 +35,27 @@ type PdpT struct {
     X509KeyPairShownByPdpToPep  tls.Certificate
 }
 
-func LoadConfig(configPath string, config *ConfigT) error {
-    if configPath == "" {
-        return errors.New("config: LoadConfig(): no config file path was provided")
-    }
-
-    if config == nil {
-        return errors.New("config: LoadConfig(): provided config pointer is nil")
-    }
-
-    file, err := os.Open(configPath)
-    if err != nil {
-        return fmt.Errorf("config: LoadConfig(): could not open config file: %w", err)
-    }
-    defer file.Close()
-
-    d := yaml.NewDecoder(file)
-
-    err = d.Decode(config)
-    if err != nil {
-        return fmt.Errorf("config: LoadConfig(): could not decode config file: %w", err)
-    }
-
-    return nil
-}
+//func LoadConfig(configPath string, config *ConfigT) error {
+//    if configPath == "" {
+//        return errors.New("config: LoadConfig(): no config file path was provided")
+//    }
+//
+//    if config == nil {
+//        return errors.New("config: LoadConfig(): provided config pointer is nil")
+//    }
+//
+//    file, err := os.Open(configPath)
+//    if err != nil {
+//        return fmt.Errorf("config: LoadConfig(): could not open config file: %w", err)
+//    }
+//    defer file.Close()
+//
+//    d := yaml.NewDecoder(file)
+//
+//    err = d.Decode(config)
+//    if err != nil {
+//        return fmt.Errorf("config: LoadConfig(): could not decode config file: %w", err)
+//    }
+//
+//    return nil
+//}
