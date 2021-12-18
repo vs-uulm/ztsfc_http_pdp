@@ -1,61 +1,27 @@
-package config
+package policies
 
-import (
-    "os"
-    "fmt"
-    "errors"
-    "crypto/x509"
-    "crypto/tls"
-
-    "gopkg.in/yaml.v2"
-)
+import "fmt"
 
 var (
-    Config ConfigT
+    Policies PoliciesT
 )
 
-type ConfigT struct {
-    SysLogger sysLoggerT `yaml:"system_logger"`
-    Pdp PdpT `yaml:"pdp"`
+type ActionT struct {
+    TrustThreshold int `yaml:"trust_threshold"`
 }
 
-type sysLoggerT struct {
-        LogLevel        string `yaml:"system_logger_logging_level"`
-        LogFilePath     string `yaml:"system_logger_destination"`
-        IfTextFormatter string `yaml:"system_logger_format"`
+type ResourceT struct {
+    Actions map[string]*ActionT `yaml:"actions"`
 }
 
-type PdpT struct {
-    ListenAddr  string `yaml:"listen_addr"`
-    CertsPdpAcceptsWhenShownByPep []string `yaml:"certs_pep_accepts_when_shown_by_pep"`
-    CertShownByPdpToPep string  `yaml:"cert_shown_by_pdp_to_pep"`
-    PrivkeyForCertsShownByPdpToPep  string  `yaml:"privkey_for_certs_shown_by_pdp_to_pep"`
-
-    CaCertPoolPdpAcceptsFromPep *x509.CertPool
-    X509KeyPairShownByPdpToPep  tls.Certificate
+type PoliciesT struct {
+    Resources map[string]*ResourceT  `yaml:"resources"`
 }
 
-func LoadConfig(configPath string, config *ConfigT) error {
-    if configPath == "" {
-        return errors.New("config: LoadConfig(): no config file path was provided")
-    }
+func PrintS(p *PoliciesT) {
+    tt1 := p.Resources["service1.testbed.informatik.uni-ulm.de"].Actions["get"].TrustThreshold
+    tt2 := p.Resources["service1.testbed.informatik.uni-ulm.de"].Actions["post"].TrustThreshold
 
-    if config == nil {
-        return errors.New("config: LoadConfig(): provided config pointer is nil")
-    }
-
-    file, err := os.Open(configPath)
-    if err != nil {
-        return fmt.Errorf("config: LoadConfig(): could not open config file: %w", err)
-    }
-    defer file.Close()
-
-    d := yaml.NewDecoder(file)
-
-    err = d.Decode(config)
-    if err != nil {
-        return fmt.Errorf("config: LoadConfig(): could not decode config file: %w", err)
-    }
-
-    return nil
+    fmt.Printf("GET TT=%d\n", tt1)
+    fmt.Printf("POST TT=%d\n", tt2)
 }

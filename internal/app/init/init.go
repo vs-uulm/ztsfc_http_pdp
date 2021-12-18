@@ -2,11 +2,14 @@ package init
 
 import (
     "fmt"
+    "errors"
     "crypto/tls"
     "crypto/x509"
     "io/ioutil"
+    "strings"
 
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
 func InitSysLoggerParams() {
@@ -54,6 +57,46 @@ func InitPdpParams() error {
     config.Config.Pdp.X509KeyPairShownByPdpToPep, err = loadX509KeyPair(config.Config.Pdp.CertShownByPdpToPep, config.Config.Pdp.PrivkeyForCertsShownByPdpToPep, "PDP", "")
 
     return err
+}
+
+func InitResourcesParams() error {
+    //fields := ""
+    // var err error
+
+    if policies.Policies.Resources == nil {
+        return errors.New("init: InitResourcesParams(): no resources defined")
+    }
+
+    for res, actions := range policies.Policies.Resources {
+        if actions == nil {
+            return errors.New("init: InitResourcesParams(): resource '" + res + "' is empty")
+            //fields += "resource '" + res + "' is empty,"
+        }
+
+        if actions.Actions == nil {
+            return errors.New("init: InitResourcesParams(): for resource '" + res + "' no actions are defined")
+            //fields += "for resource '" + res + "' no actions are defined,"
+        }
+
+        for action, val := range actions.Actions {
+            upperAction := strings.ToUpper(action)
+            if upperAction != "GET" && upperAction != "POST" {
+                return errors.New("init: InitResourcesParams(): action '" + action + "' defined for resource '" + res + "' is not valid")
+                //fields += "action '" + action + "' defined for resource '" + res + "' is not valid,"
+            }
+
+            if val.TrustThreshold <= 0 {
+                return errors.New("init: InitResourcesParams(): for resource '" + res + "' and action '" + action + "' the trust threshold makes no sense")
+                //fields += "for resource '" + res + "' and action '" + action + "' the trust threshold makes no sense,"
+            }
+        }
+    }
+
+   // if fields != "" {
+   //     return errors.New("init: InitResourcesParams(): in the policy section 'resources' the following required fields are missed: " + strings.TrimSuffix(fields, ","))
+   // }
+
+    return nil
 }
 
 // function unifies the loading of CA certificates for different components

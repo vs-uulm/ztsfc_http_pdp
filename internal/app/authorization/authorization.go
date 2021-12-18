@@ -8,6 +8,7 @@ forwarded or blocked.
 import (
 	// md "local.com/leobrada/ztsfc_http_pdp/metadata"
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
 var (
@@ -38,13 +39,15 @@ func PerformAuthorization(cpm *md.Cp_metadata) (forwardSFC []string, allow bool)
 	//fmt.Printf("Aggregated Trust Score: %d\n", aggregatedTrust)
 
 	//fmt.Printf("Service Threshold: %d\n", trustCalc.thresholdValues[cpm.Resource][cpm.Action])
-	if aggregatedTrust >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
+	//if aggregatedTrust >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
+    trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
+	if aggregatedTrust >= trustThreshold {
 		return []string{}, true
-	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease) >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
+	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease) >= trustThreshold {
 		return []string{"logger"}, true
-	} else if (aggregatedTrust + trustCalc.dpiTrustIncrease) >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
+	} else if (aggregatedTrust + trustCalc.dpiTrustIncrease) >= trustThreshold {
 		return []string{"dpi"}, true
-	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease + trustCalc.dpiTrustIncrease) >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
+	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease + trustCalc.dpiTrustIncrease) >= trustThreshold {
 		return []string{"logger", "dpi"}, true
 	} else {
 		return nil, false
