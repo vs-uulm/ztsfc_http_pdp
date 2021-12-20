@@ -19,3 +19,9 @@ certs/*
 *.swp
 config/*
 !config/.gitkeep
+
+# Executable
+/main
+
+# VSCode settings
+/.vscode
