@@ -14,8 +14,12 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 ./cmd/ztsfc_http_pdp/main
+*.swp
 certs/*
 !certs/.gitkeep
-*.swp
 config/*
 !config/.gitkeep
+!config/example_config.yml
+policies/*
+!policies/.gitkeep
+!policies/example_policies.yml
