@@ -4,7 +4,7 @@ attributes:
     cert_authenticated: 40
 
 resources:
-  service1.testbed.informatik.uni-ulm.de:
+  your_resource_URL:
     actions:
       get:
         trust_threshold: 10
