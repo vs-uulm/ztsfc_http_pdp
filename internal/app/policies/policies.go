@@ -6,6 +6,15 @@ var (
     Policies PoliciesT
 )
 
+type AttributesT struct {
+    User UserT  `yaml:"user"`
+}
+
+type UserT struct {
+    PwAuthenticated    int `yaml:"pw_authenticated"`
+    CertAuthenticated   int `yaml:"cert_authenticated"`
+}
+
 type ActionT struct {
     TrustThreshold int `yaml:"trust_threshold"`
 }
@@ -15,6 +24,7 @@ type ResourceT struct {
 }
 
 type PoliciesT struct {
+    Attributes AttributesT  `yaml:"attributes"`
     Resources map[string]*ResourceT  `yaml:"resources"`
 }
 

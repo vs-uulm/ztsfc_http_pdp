@@ -6,6 +6,8 @@ forwarded or blocked.
 */
 
 import (
+    "fmt"
+
 	// md "local.com/leobrada/ztsfc_http_pdp/metadata"
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
@@ -86,29 +88,35 @@ func PerformAuthorization(cpm *md.Cp_metadata) (forwardSFC []string, allow bool)
 	//	}
 }
 
-/*
-In this fuction the trust score of the user attributes is calculated
-
-@param req: request of the user
-
-@return trust: trust score of user attributes
-*/
+// In this fuction the trust score of the user attributes is calculated
 func calcUserTrust(cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
-	// Analyze authentication type
-	if cpm.Pw_authenticated {
-		trust = trust + trustCalc.trustIncreaseUserAttr["PW"]
-	}
+    if cpm.PwAuthenticated {
+        trust += policies.Policies.Attributes.User.PwAuthenticated
+    }
 
-	if cpm.Cert_authenticated {
-		trust = trust + trustCalc.trustIncreaseUserAttr["CRT"]
-	}
+    if cpm.CertAuthenticated {
+        trust += policies.Policies.Attributes.User.CertAuthenticated
+    }
+
+    fmt.Printf("Calculated Trust Score: %d\n", trust)
+
+    return trust
+
+	// Analyze authentication type
+	//if cpm.Pw_authenticated {
+	//	trust = trust + trustCalc.trustIncreaseUserAttr["PW"]
+	//}
+
+	//if cpm.Cert_authenticated {
+	//	trust = trust + trustCalc.trustIncreaseUserAttr["CRT"]
+	//}
 
 	// Analyze geographic area
-	if cpm.Location == trustCalc.mapUsergeoArea[cpm.User] {
-		trust = trust + trustCalc.trustIncreaseUserAttr["UGA"]
-	}
+	//if cpm.Location == trustCalc.mapUsergeoArea[cpm.User] {
+	//	trust = trust + trustCalc.trustIncreaseUserAttr["UGA"]
+	//}
 
 	// Analyze commonly used services
 	//requestedService := strings.Split(req.URL.Path,"/")[1]						// Service is identified with first part in the requested URL
@@ -130,8 +138,6 @@ func calcUserTrust(cpm *md.Cp_metadata) (trust int) {
 	//if cpm.FailedToday <= trustCalc.maxAuthAttempts {
 	//	trust = trust + trustCalc.trustIncreaseUserAttr["AA"]
 	//}
-
-	return trust
 }
 
 /*
@@ -144,19 +150,19 @@ In this function the trust score of the device attributes is calculated
 func calcDeviceTrust(cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
-	if cpm.Device == "device1" {
-		trust = trust + trustCalc.deviceDatabase["device1"]
-	} else if cpm.Device == "device2" {
-		trust = trust + trustCalc.deviceDatabase["device2"]
-	} else if cpm.Device == "device3" {
-		trust = trust + trustCalc.deviceDatabase["device3"]
-	} else if cpm.Device == "device4" {
-		trust = trust + trustCalc.deviceDatabase["device4"]
-	} else if cpm.Device == "device5" {
-		trust = trust + trustCalc.deviceDatabase["device5"]
-	} else {
-		trust = trust + 0
-	}
+	//if cpm.Device == "device1" {
+	//	trust = trust + trustCalc.deviceDatabase["device1"]
+	//} else if cpm.Device == "device2" {
+	//	trust = trust + trustCalc.deviceDatabase["device2"]
+	//} else if cpm.Device == "device3" {
+	//	trust = trust + trustCalc.deviceDatabase["device3"]
+	//} else if cpm.Device == "device4" {
+	//	trust = trust + trustCalc.deviceDatabase["device4"]
+	//} else if cpm.Device == "device5" {
+	//	trust = trust + trustCalc.deviceDatabase["device5"]
+	//} else {
+	//	trust = trust + 0
+	//}
 
 	//	if device := req.Header.Get("managedDevice"); device != "" {			// Extract the used managed device form the HTTP header
 	//		deviceName = device

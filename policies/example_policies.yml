@@ -1,0 +1,12 @@
+attributes:
+  user:
+    pw_authenticated: 10
+    cert_authenticated: 40
+
+resources:
+  service1.testbed.informatik.uni-ulm.de:
+    actions:
+      get:
+        trust_threshold: 10
+      post:
+        trust_threshold: 50
