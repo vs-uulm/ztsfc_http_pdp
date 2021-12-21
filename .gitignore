@@ -23,3 +23,9 @@ config/*
 policies/*
 !policies/.gitkeep
 !policies/example_policies.yml
+
+# Executable
+/main
+
+# VSCode settings
+/.vscode
