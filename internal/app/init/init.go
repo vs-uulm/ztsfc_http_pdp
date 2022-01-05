@@ -7,6 +7,7 @@ import (
     "crypto/x509"
     "io/ioutil"
     "strings"
+    "net"
 
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
@@ -54,47 +55,51 @@ func InitPdpParams() error {
         }
     }
 
-    config.Config.Pdp.X509KeyPairShownByPdpToPep, err = loadX509KeyPair(config.Config.Pdp.CertShownByPdpToPep, config.Config.Pdp.PrivkeyForCertsShownByPdpToPep, "PDP", "")
+    config.Config.Pdp.X509KeyPairShownByPdpToPep, err = loadX509KeyPair(config.Config.Pdp.CertShownByPdpToPep,
+        config.Config.Pdp.PrivkeyForCertsShownByPdpToPep, "PDP", "")
 
     return err
 }
 
+// All Policy Related Initialization Functions
 func InitResourcesParams() error {
-    //fields := ""
-    // var err error
-
     if policies.Policies.Resources == nil {
         return errors.New("init: InitResourcesParams(): no resources defined")
     }
 
-    for res, actions := range policies.Policies.Resources {
-        if actions == nil {
-            return errors.New("init: InitResourcesParams(): resource '" + res + "' is empty")
-            //fields += "resource '" + res + "' is empty,"
+    // Iterates over all defined (by resName) resources
+    for resName, resource := range policies.Policies.Resources {
+        if resource == nil {
+            return errors.New("init: InitResourcesParams(): resource '" + resName + "' is empty")
         }
 
-        if actions.Actions == nil {
-            return errors.New("init: InitResourcesParams(): for resource '" + res + "' no actions are defined")
-            //fields += "for resource '" + res + "' no actions are defined,"
+        if resource.Actions == nil {
+            return errors.New("init: InitResourcesParams(): for resource '" + resName + "' no actions are defined")
         }
 
-        for action, val := range actions.Actions {
+        // Iterates over all defined actions for each resource
+        for action, val := range resource.Actions {
             upperAction := strings.ToUpper(action)
             if upperAction != "GET" && upperAction != "POST" {
-                return errors.New("init: InitResourcesParams(): action '" + action + "' defined for resource '" + res + "' is not valid")
-                //fields += "action '" + action + "' defined for resource '" + res + "' is not valid,"
+                return errors.New("init: InitResourcesParams(): action '" + action +
+                    "' defined for resource '" + resName + "' is not valid")
             }
 
             if val.TrustThreshold <= 0 {
-                return errors.New("init: InitResourcesParams(): for resource '" + res + "' and action '" + action + "' the trust threshold makes no sense")
-                //fields += "for resource '" + res + "' and action '" + action + "' the trust threshold makes no sense,"
+                return errors.New("init: InitResourcesParams(): for resource '" + resName +
+                    "' and action '" + action + "' the trust threshold makes no sense")
             }
         }
-    }
 
-   // if fields != "" {
-   //     return errors.New("init: InitResourcesParams(): in the policy section 'resources' the following required fields are missed: " + strings.TrimSuffix(fields, ","))
-   // }
+        // Iterates over all trusted locations (for each resource) and tries to extract the IPNet from it
+        for _, location := range resource.TrustedLocations {
+            _, ipnet, err := net.ParseCIDR(location)
+            if err != nil {
+                return fmt.Errorf("init: InitResourcesParams(): %s is not in valid CIDR network notation: %v", location, err)
+            }
+            resource.TrustedIPNetworks = append(resource.TrustedIPNetworks, ipnet)
+        }
+    }
 
     return nil
 }
@@ -106,11 +111,6 @@ func loadCACertificate(certfile string, componentName string, certPool *x509.Cer
         return fmt.Errorf("loadCACertificate(): Loading %s CA certificate from %s error: %v", componentName, certfile, err)
     }
 
-        //else {
-        //        sysLogger.Debugf("%s CA certificate from %s is successfully loaded", componentName, certfile)
-        //}
-
-        // Append a certificate to the pool
     certPool.AppendCertsFromPEM(caRoot)
     return nil
 }
@@ -121,10 +121,6 @@ func loadX509KeyPair(certfile, keyfile, componentName, certAttr string) (tls.Cer
     if err != nil {
         return keyPair, fmt.Errorf("loadX509KeyPair(): critical error when loading %s X509KeyPair for %s from %s and %s: %v", certAttr, componentName, certfile, keyfile, err)
     }
-
-    //else {
-    //    sysLogger.Debugf("%s X509KeyPair for %s from %s and %s is successfully loaded", certAttr, componentName, certfile, keyfile)
-    //}
 
     return keyPair, nil
 }

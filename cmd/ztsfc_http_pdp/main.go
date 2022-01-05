@@ -44,6 +44,7 @@ func init() {
 		config.Config.SysLogger.IfTextFormatter,
 		logger.Fields{"type": "system"},
 	)
+
 	if err != nil {
 		log.Fatalf("main: init(): could not initialize logger: %v", err)
 	}

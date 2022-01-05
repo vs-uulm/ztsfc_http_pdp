@@ -6,10 +6,10 @@ forwarded or blocked.
 */
 
 import (
-    "fmt"
+    "net"
 
-	// md "local.com/leobrada/ztsfc_http_pdp/metadata"
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+    logger "github.com/vs-uulm/ztsfc_http_logger"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
@@ -26,22 +26,14 @@ sent to the service, sent to the DPI or be blocked.
 @return forwardSFC: List of identifiers for service functions. nil if request is not allowed at all.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
-func PerformAuthorization(cpm *md.Cp_metadata) (forwardSFC []string, allow bool) {
+func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwardSFC []string, allow bool) {
 
-	//fmt.Println("Start Trust Score Calculation")
-	//fmt.Println("Start Calculating User Trust Score...")
-	userTrust := calcUserTrust(cpm)
-	//fmt.Printf("User Trust Score: %d\n", userTrust)
+	userTrust := calcUserTrust(sysLogger, cpm)
 
-	//fmt.Println("Start Calculating Device Trust Score...")
-	deviceTrust := calcDeviceTrust(cpm)
-	//fmt.Printf("Device Trust Score: %d\n", deviceTrust)
+	deviceTrust := calcDeviceTrust(sysLogger, cpm)
 
 	aggregatedTrust := userTrust + deviceTrust
-	//fmt.Printf("Aggregated Trust Score: %d\n", aggregatedTrust)
 
-	//fmt.Printf("Service Threshold: %d\n", trustCalc.thresholdValues[cpm.Resource][cpm.Action])
-	//if aggregatedTrust >= trustCalc.thresholdValues[cpm.Resource][cpm.Action] {
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
 	if aggregatedTrust >= trustThreshold {
 		return []string{}, true
@@ -55,41 +47,10 @@ func PerformAuthorization(cpm *md.Cp_metadata) (forwardSFC []string, allow bool)
 		return nil, false
 	}
 
-	//trustCalc.Log("----User-trust: " + strconv.Itoa(userTrust) + "\n")
-	//fmt.Printf("User-Trust: %d\n",userTrust)
-
-	//    fmt.Println("Start Calculating Device Trust Score...")
-	//	deviceTrust := trustCalc.calcDeviceTrust(req)
-	//	trustCalc.Log("----Device-trust: " + strconv.Itoa(deviceTrust) + "\n")
-	//	fmt.Printf("Device-Trust: %d\n", deviceTrust)
-	//
-	//	trustCalc.removeHTTPHeader(req)												// Remove custom http header, which are only necessary for trust-calculation
-	//
-	//	trust := userTrust + deviceTrust
-	//	service := strings.Split(req.URL.Path,"/")[1]							// Derive requested service from URL
-	//	trustCalc.Log("----Requested service: " + service + "\n")
-	//
-	//	if threshold, ok := trustCalc.dataSources.thresholdValues[service]; ok {
-	//		if trust >= threshold {													// In this case the threshold was reached, without a DPI -> Send request directly to service
-	//			trustCalc.Log("----Request directly send to service\n")
-	//			fmt.Println("Direct to service")
-	//			return false, false
-	//		} else if (trust+trustCalc.dataSources.dpiTrustIncrease) >= threshold {	// In this case the threshold was only reached with the DPI -> Send request at first to the DPI
-	//			trustCalc.Log("----Request send to DPI\n")
-	//			fmt.Println("Request send to DPI")
-	//			return true, false
-	//		} else {																// In this case the threshold was not reached with the DPI because the trust-value is very low -> Request is blocked
-	//			trustCalc.Log("----Trust to low. Request blocked\n")
-	//			fmt.Printf("Request blocked")
-	//			return false, true
-	//		}
-	//	} else {
-	//		return false,true										// In this case an unknown service was requested -> Request is blocked
-	//	}
 }
 
 // In this fuction the trust score of the user attributes is calculated
-func calcUserTrust(cpm *md.Cp_metadata) (trust int) {
+func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
     if cpm.PwAuthenticated {
@@ -100,44 +61,11 @@ func calcUserTrust(cpm *md.Cp_metadata) (trust int) {
         trust += policies.Policies.Attributes.User.CertAuthenticated
     }
 
-    fmt.Printf("Calculated Trust Score: %d\n", trust)
+    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
+        cpm.User, cpm.Resource, cpm.Action, trust)
 
     return trust
 
-	// Analyze authentication type
-	//if cpm.Pw_authenticated {
-	//	trust = trust + trustCalc.trustIncreaseUserAttr["PW"]
-	//}
-
-	//if cpm.Cert_authenticated {
-	//	trust = trust + trustCalc.trustIncreaseUserAttr["CRT"]
-	//}
-
-	// Analyze geographic area
-	//if cpm.Location == trustCalc.mapUsergeoArea[cpm.User] {
-	//	trust = trust + trustCalc.trustIncreaseUserAttr["UGA"]
-	//}
-
-	// Analyze commonly used services
-	//requestedService := strings.Split(req.URL.Path,"/")[1]						// Service is identified with first part in the requested URL
-	//for _, commonService := range trustCalc.dataSources.UserDatabase[user].commonUsedService {
-	//	if requestedService == commonService {										// Check, if commonly used service corresponds to the requested service
-	//		trust = trust + trustCalc.dataSources.trustIncreaseUserAttr["CUS"]
-	//		trustCalc.Log("----Commonly used service: " + commonService+", Trust: " +  strconv.Itoa(trust) + "\n")
-	//		break
-	//	}
-	//}
-
-    // TODO: CHECK THIS PARAMTER AGAIN
-	// Check usual amount of requests
-	//if cpm.RequestToday <= trustCalc.usualRequests[cpm.User] {
-	//	trust = trust + trustCalc.trustIncreaseUserAttr["UAR"]
-	//}
-
-	// TODO: CHECK THIS PARAMETER AGAIN
-	//if cpm.FailedToday <= trustCalc.maxAuthAttempts {
-	//	trust = trust + trustCalc.trustIncreaseUserAttr["AA"]
-	//}
 }
 
 /*
@@ -147,48 +75,27 @@ In this function the trust score of the device attributes is calculated
 
 @return trust: trust score of device attributes
 */
-func calcDeviceTrust(cpm *md.Cp_metadata) (trust int) {
+func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
-	//if cpm.Device == "device1" {
-	//	trust = trust + trustCalc.deviceDatabase["device1"]
-	//} else if cpm.Device == "device2" {
-	//	trust = trust + trustCalc.deviceDatabase["device2"]
-	//} else if cpm.Device == "device3" {
-	//	trust = trust + trustCalc.deviceDatabase["device3"]
-	//} else if cpm.Device == "device4" {
-	//	trust = trust + trustCalc.deviceDatabase["device4"]
-	//} else if cpm.Device == "device5" {
-	//	trust = trust + trustCalc.deviceDatabase["device5"]
-	//} else {
-	//	trust = trust + 0
-	//}
+    if deviceAccessFromTrustedLocation(sysLogger, cpm) {
+        trust += policies.Policies.Attributes.Device.FromTrustedLocation
+    }
 
-	//	if device := req.Header.Get("managedDevice"); device != "" {			// Extract the used managed device form the HTTP header
-	//		deviceName = device
-	//		trustCalc.Log("----Managed device: " + deviceName + "\n")
-	//	} else{
-	//		trustCalc.Log("----No Managed device used\n")
-	//		return 0		// In this case no managed device is used
-	//	}
-	//
-	//	fmt.Println(deviceName)
-	//	if device, ok := trustCalc.dataSources.deviceDatabase[deviceName]; ok {		// Check, if the specified managed device is registered in the device database
-	//		if device["LPL"] {														// Check, if on the device the latest patch levels are installed
-	//			trust = trust + trustCalc.dataSources.trustIncreaseDeviceAttr["LPL"]
-	//			trustCalc.Log("----Current Patch level, Trust: " +  strconv.Itoa(trust) + "\n")
-	//		}
-	//		if device["NAVS"] {														// Check, if there are no alerts from the virus scanner
-	//			trust = trust + trustCalc.dataSources.trustIncreaseDeviceAttr["NAVS"]
-	//			trustCalc.Log("----No alerts from virus scanner, Trust: " +  strconv.Itoa(trust) + "\n")
-	//		}
-	//		if device["RI"] {														// Check, if the device was recently re-installed
-	//			trust = trust + trustCalc.dataSources.trustIncreaseDeviceAttr["RI"]
-	//			trustCalc.Log("----Re-Installed, Trust: " +  strconv.Itoa(trust) + "\n")
-	//		}
-	//	}
+    sysLogger.Debugf("authorization: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
+        cpm.User, cpm.Resource, cpm.Action, trust)
 
 	return trust
+}
+
+func deviceAccessFromTrustedLocation(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+    for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
+        if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
+            return true
+        }
+    }
+
+    return false
 }
 
 /*

@@ -64,13 +64,13 @@ type authResponse struct {
 func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	md := new(metadata.Cp_metadata)
-	md.ExtractMetadata(req)
+	md.ExtractMetadata(router.sysLogger, req)
 
     // Performs the Authorization; returns the determined SFC as well as the authorization decision itself.
     // TODO: return an error?
     // TODO: change order of the return values?
     // TODO: is allow only false if even with the longest sfc th trust score cant be increased sufficiently to hit the trust threshold?
-	sfc, allow := autho.PerformAuthorization(md)
+	sfc, allow := autho.PerformAuthorization(router.sysLogger, md)
 
 	// assemble a json response for the request and set header respectively
 	w.Header().Set("Content-Type", "application/json")
