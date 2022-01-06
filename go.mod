@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/vs-uulm/ztsfc_http_logger v0.0.0-20211215161122-e6d382f861e2
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 

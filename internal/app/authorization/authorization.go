@@ -8,19 +8,22 @@ forwarded or blocked.
 import (
     "net"
 
+    "golang.org/x/time/rate"
+
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
-var (
-	trustCalc *DataSources = NewDataSources()
-)
+//var (
+//	trustCalc *DataSources = NewDataSources()
+//)
 
 /*
 This function decides based on the achieved trust score and the requested service, if the request should be directly
 sent to the service, sent to the DPI or be blocked.
 
+@param sysLogger: used to print debug messages
 @param req: request of the user
 
 @return forwardSFC: List of identifiers for service functions. nil if request is not allowed at all.
@@ -35,21 +38,33 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwar
 	aggregatedTrust := userTrust + deviceTrust
 
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
-	if aggregatedTrust >= trustThreshold {
-		return []string{}, true
-	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease) >= trustThreshold {
-		return []string{"logger"}, true
-	} else if (aggregatedTrust + trustCalc.dpiTrustIncrease) >= trustThreshold {
-		return []string{"dpi"}, true
-	} else if (aggregatedTrust + trustCalc.loggerTrustIncrease + trustCalc.dpiTrustIncrease) >= trustThreshold {
-		return []string{"logger", "dpi"}, true
-	} else {
-		return nil, false
-	}
+    if aggregatedTrust >= trustThreshold {
+        return []string{}, true
+    } else {
+        return nil, false
+    }
+	//if aggregatedTrust >= trustThreshold {
+	//	return []string{}, true
+	//} else if (aggregatedTrust + trustCalc.loggerTrustIncrease) >= trustThreshold {
+	//	return []string{"logger"}, true
+	//} else if (aggregatedTrust + trustCalc.dpiTrustIncrease) >= trustThreshold {
+	//	return []string{"dpi"}, true
+	//} else if (aggregatedTrust + trustCalc.loggerTrustIncrease + trustCalc.dpiTrustIncrease) >= trustThreshold {
+	//	return []string{"logger", "dpi"}, true
+	//} else {
+	//	return nil, false
+	//}
 
 }
 
-// In this fuction the trust score of the user attributes is calculated
+/*
+In this fuction the trust score of the user attributes is calculated
+
+@param sysLogger: used to print debug messages
+@param cpm: holds all user and device metadata
+
+@return trust: calculated user trust 
+*/
 func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
@@ -71,15 +86,20 @@ func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 /*
 In this function the trust score of the device attributes is calculated
 
-@param req: request of the user
+@param sysLogger: used to print debug messages
+@param cpm: holds all user and device metadata
 
 @return trust: trust score of device attributes
 */
 func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
-    if deviceAccessFromTrustedLocation(sysLogger, cpm) {
+    if deviceAccessFromTrustedLocation(cpm) {
         trust += policies.Policies.Attributes.Device.FromTrustedLocation
+    }
+
+    if withinAllowedRequestRate(cpm) {
+        trust += policies.Policies.Attributes.Device.WithinAllowedRequestRate
     }
 
     sysLogger.Debugf("authorization: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
@@ -88,7 +108,7 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
 	return trust
 }
 
-func deviceAccessFromTrustedLocation(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+func deviceAccessFromTrustedLocation(cpm *md.Cp_metadata) bool {
     for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
         if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
             return true
@@ -96,6 +116,27 @@ func deviceAccessFromTrustedLocation(sysLogger *logger.Logger, cpm *md.Cp_metada
     }
 
     return false
+}
+
+func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
+    maxDevicesPerUser := 5
+
+    // TODO: Check of "policies.Policies.Resources[cpm.Resource]" exists
+    user, exists := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User]
+    if !exists {
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*rate.Limiter)
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] =
+            rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 10)
+    } else if len(user) >= maxDevicesPerUser {
+        for device, _ := range user {
+            delete(user, device)
+            break
+        }
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] =
+            rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 10)
+    }
+
+    return policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].Allow()
 }
 
 /*

@@ -9,6 +9,8 @@ import (
     "strings"
     "net"
 
+    "golang.org/x/time/rate"
+
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
@@ -99,6 +101,9 @@ func InitResourcesParams() error {
             }
             resource.TrustedIPNetworks = append(resource.TrustedIPNetworks, ipnet)
         }
+
+        // Creates an empty ResourceAccessLimits map
+        resource.ResourceAccessLimits = make(map[string]map[string]*rate.Limiter)
     }
 
     return nil
