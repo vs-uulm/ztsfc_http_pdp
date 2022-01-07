@@ -3,6 +3,7 @@ package policies
 import (
     "fmt"
     "net"
+    "time"
 
     "golang.org/x/time/rate"
 )
@@ -23,7 +24,7 @@ type UserT struct {
 
 type DeviceT struct {
     FromTrustedLocation int `yaml:"from_trusted_location"`
-    WithinAllowedRequestRate int `yaml:"within_allowed_request_rate"`
+    NotWithinAllowedRequestRatePenalty int `yaml:"not_within_allowed_request_rate_penalty"`
 }
 
 type ActionT struct {
@@ -34,9 +35,15 @@ type ResourceT struct {
     Actions map[string]*ActionT `yaml:"actions"`
     TrustedLocations   []string `yaml:"trusted_locations"`
     AllowedRequestsPerSecond rate.Limit `yaml:"allowed_requests_per_second"`
+    AllowedDevicesPerUser int `yaml:"allowed_devices_per_user"`
 
     TrustedIPNetworks []*net.IPNet
-    ResourceAccessLimits map[string]map[string]*rate.Limiter
+    ResourceAccessLimits map[string]map[string]*AccessLimiter
+}
+
+type AccessLimiter struct {
+    AccessLimit *rate.Limiter
+    PenaltyTimestamp time.Time
 }
 
 type PoliciesT struct {

@@ -9,8 +9,6 @@ import (
     "strings"
     "net"
 
-    "golang.org/x/time/rate"
-
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
@@ -102,8 +100,18 @@ func InitResourcesParams() error {
             resource.TrustedIPNetworks = append(resource.TrustedIPNetworks, ipnet)
         }
 
+        // TODO: Checking of AllowedRequestPerSecond 
+        if resource.AllowedRequestsPerSecond <= 0 {
+            return errors.New("init: InitResourcesParams(): 'AllowedRequestsPerSecond' for resource '" + resName  + "' is nil or negative")
+        }
+
+        // Checking of Allowed DevicesPerUser Input
+        if resource.AllowedDevicesPerUser <= 0 {
+            return errors.New("init: InitResourcesParams(): 'AllowedDevicesPerUser' for resource '" + resName  + "' is nil or negative")
+        }
+
         // Creates an empty ResourceAccessLimits map
-        resource.ResourceAccessLimits = make(map[string]map[string]*rate.Limiter)
+        resource.ResourceAccessLimits = make(map[string]map[string]*policies.AccessLimiter)
     }
 
     return nil

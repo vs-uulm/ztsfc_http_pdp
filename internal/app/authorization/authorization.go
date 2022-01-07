@@ -7,6 +7,7 @@ forwarded or blocked.
 
 import (
     "net"
+    "time"
 
     "golang.org/x/time/rate"
 
@@ -36,6 +37,9 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwar
 	deviceTrust := calcDeviceTrust(sysLogger, cpm)
 
 	aggregatedTrust := userTrust + deviceTrust
+
+    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated aggregated score is %d",
+        cpm.User, cpm.Resource, cpm.Action, aggregatedTrust)
 
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
     if aggregatedTrust >= trustThreshold {
@@ -98,8 +102,9 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
         trust += policies.Policies.Attributes.Device.FromTrustedLocation
     }
 
-    if withinAllowedRequestRate(cpm) {
-        trust += policies.Policies.Attributes.Device.WithinAllowedRequestRate
+    if !withinAllowedRequestRate(cpm) {
+        trust -= policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty
+
     }
 
     sysLogger.Debugf("authorization: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
@@ -124,19 +129,43 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
     // TODO: Check of "policies.Policies.Resources[cpm.Resource]" exists
     user, exists := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User]
     if !exists {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*rate.Limiter)
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] =
-            rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 10)
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            PenaltyTimestamp: time.Time{},
+        }
     } else if len(user) >= maxDevicesPerUser {
         for device, _ := range user {
             delete(user, device)
             break
         }
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] =
-            rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 10)
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            PenaltyTimestamp: time.Time{},
+        }
+    } else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            PenaltyTimestamp: time.Time{},
+        }
     }
 
-    return policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].Allow()
+    within := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.IsZero()
+    if !within {
+        applyPenaltyDirectly := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.After(time.Now())
+        if applyPenaltyDirectly {
+            return false
+        } else {
+            policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Time{}
+        }
+    }
+
+    within = policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].AccessLimit.Allow()
+    if !within {
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Minute * 5)
+    }
+
+    return within
 }
 
 /*
