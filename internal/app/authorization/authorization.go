@@ -6,14 +6,10 @@ forwarded or blocked.
 */
 
 import (
-    "net"
-    "time"
-
-    "golang.org/x/time/rate"
-
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust"
 )
 
 //var (
@@ -31,18 +27,13 @@ sent to the service, sent to the DPI or be blocked.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwardSFC []string, allow bool) {
+    totalTrustScore := trust.CalcTrustScore(sysLogger, cpm)
 
-	userTrust := calcUserTrust(sysLogger, cpm)
-
-	deviceTrust := calcDeviceTrust(sysLogger, cpm)
-
-	aggregatedTrust := userTrust + deviceTrust
-
-    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated aggregated score is %d",
-        cpm.User, cpm.Resource, cpm.Action, aggregatedTrust)
+    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
+        cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
 
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
-    if aggregatedTrust >= trustThreshold {
+    if totalTrustScore >= trustThreshold {
         return []string{}, true
     } else {
         return nil, false
@@ -59,113 +50,6 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwar
 	//	return nil, false
 	//}
 
-}
-
-/*
-In this fuction the trust score of the user attributes is calculated
-
-@param sysLogger: used to print debug messages
-@param cpm: holds all user and device metadata
-
-@return trust: calculated user trust 
-*/
-func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
-	trust = 0
-
-    if cpm.PwAuthenticated {
-        trust += policies.Policies.Attributes.User.PwAuthenticated
-    }
-
-    if cpm.CertAuthenticated {
-        trust += policies.Policies.Attributes.User.CertAuthenticated
-    }
-
-    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
-        cpm.User, cpm.Resource, cpm.Action, trust)
-
-    return trust
-
-}
-
-/*
-In this function the trust score of the device attributes is calculated
-
-@param sysLogger: used to print debug messages
-@param cpm: holds all user and device metadata
-
-@return trust: trust score of device attributes
-*/
-func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
-	trust = 0
-
-    if deviceAccessFromTrustedLocation(cpm) {
-        trust += policies.Policies.Attributes.Device.FromTrustedLocation
-    }
-
-    if !withinAllowedRequestRate(cpm) {
-        trust -= policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty
-
-    }
-
-    sysLogger.Debugf("authorization: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
-        cpm.User, cpm.Resource, cpm.Action, trust)
-
-	return trust
-}
-
-func deviceAccessFromTrustedLocation(cpm *md.Cp_metadata) bool {
-    for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
-        if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
-            return true
-        }
-    }
-
-    return false
-}
-
-func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
-    maxDevicesPerUser := 5
-
-    // TODO: Check of "policies.Policies.Resources[cpm.Resource]" exists
-    user, exists := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User]
-    if !exists {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
-            PenaltyTimestamp: time.Time{},
-        }
-    } else if len(user) >= maxDevicesPerUser {
-        for device, _ := range user {
-            delete(user, device)
-            break
-        }
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
-            PenaltyTimestamp: time.Time{},
-        }
-    } else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
-            PenaltyTimestamp: time.Time{},
-        }
-    }
-
-    within := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.IsZero()
-    if !within {
-        applyPenaltyDirectly := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.After(time.Now())
-        if applyPenaltyDirectly {
-            return false
-        } else {
-            policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Time{}
-        }
-    }
-
-    within = policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].AccessLimit.Allow()
-    if !within {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Minute * 5)
-    }
-
-    return within
 }
 
 /*
