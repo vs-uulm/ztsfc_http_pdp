@@ -10,3 +10,7 @@ resources:
         trust_threshold: 10
       post:
         trust_threshold: 50
+      trusted_locations:
+        - "1.1.1.1/24"
+      allowed_requests_per_second: 3
+      allowed_devices_per_user: 5
