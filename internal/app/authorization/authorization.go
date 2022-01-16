@@ -34,7 +34,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwar
 
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
     if totalTrustScore >= trustThreshold {
-        return []string{}, true
+        return []string{"logger"}, true
     } else {
         return nil, false
     }

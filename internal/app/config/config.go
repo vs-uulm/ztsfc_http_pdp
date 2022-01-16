@@ -22,7 +22,7 @@ type sysLoggerT struct {
 
 type PdpT struct {
     ListenAddr  string `yaml:"listen_addr"`
-    CertsPdpAcceptsWhenShownByPep []string `yaml:"certs_pep_accepts_when_shown_by_pep"`
+    CertsPdpAcceptsWhenShownByPep []string `yaml:"certs_pdp_accepts_when_shown_by_pep"`
     CertShownByPdpToPep string  `yaml:"cert_shown_by_pdp_to_pep"`
     PrivkeyForCertsShownByPdpToPep  string  `yaml:"privkey_for_certs_shown_by_pdp_to_pep"`
 

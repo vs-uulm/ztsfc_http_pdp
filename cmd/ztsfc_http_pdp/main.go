@@ -39,6 +39,7 @@ func init() {
 	}
 
     // Creating the Logger
+	ini.InitSysLoggerParams()
 	sysLogger, err = logger.New(config.Config.SysLogger.LogFilePath,
 		config.Config.SysLogger.LogLevel,
 		config.Config.SysLogger.IfTextFormatter,
@@ -51,9 +52,6 @@ func init() {
 
     // Create empty CertPool that is needed for certificates the PDP accepts when from by the PEP
 	config.Config.Pdp.CaCertPoolPdpAcceptsFromPep = x509.NewCertPool()
-
-    // init block 
-	ini.InitSysLoggerParams()
 
 	if err = ini.InitPdpParams(); err != nil {
 		sysLogger.Fatalf("main: init(): could not initialize PDP params: %v", err)
