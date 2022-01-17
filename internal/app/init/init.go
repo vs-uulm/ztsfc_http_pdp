@@ -44,7 +44,7 @@ func InitPdpParams() error {
         fields += "cert_shown_by_pdp_to_pep"
     }
 
-    if config.Config.Pdp.PrivkeyForCertsShownByPdpToPep == "" {
+    if config.Config.Pdp.PrivkeyForCertShownByPdpToPep == "" {
         fields += "privkey_for_certs_shown_by_pdp_to_pep"
     }
 
@@ -56,7 +56,7 @@ func InitPdpParams() error {
     }
 
     config.Config.Pdp.X509KeyPairShownByPdpToPep, err = loadX509KeyPair(config.Config.Pdp.CertShownByPdpToPep,
-        config.Config.Pdp.PrivkeyForCertsShownByPdpToPep, "PDP", "")
+        config.Config.Pdp.PrivkeyForCertShownByPdpToPep, "PDP", "")
 
     return err
 }

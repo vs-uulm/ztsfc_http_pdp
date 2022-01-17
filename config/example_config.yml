@@ -8,4 +8,4 @@ pdp:
   certs_pep_accepts_when_shown_by_pep:
     - ./certs/example_cert.crt
   cert_shown_by_pdp_to_pep: ./certs/you_show_to_pep.crt
-  privkey_for_certs_shown_by_pdp_to_pep: ./certs/corresponding_priv.key
+  privkey_for_cert_shown_by_pdp_to_pep: ./certs/corresponding_priv.key
