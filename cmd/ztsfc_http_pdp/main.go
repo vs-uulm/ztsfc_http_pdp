@@ -57,7 +57,7 @@ func init() {
 		sysLogger.Fatalf("main: init(): could not initialize PDP params: %v", err)
 	}
 
-	if err = ini.InitResourcesParams(); err != nil {
+	if err = ini.InitPolicies(); err != nil {
 		sysLogger.Fatalf("main: init(): could not initialize resource params: %v", err)
 	}
 

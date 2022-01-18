@@ -15,6 +15,7 @@ var (
 type AttributesT struct {
     User UserT  `yaml:"user"`
     Device DeviceT  `yaml:"device"`
+    Sf map[string]*SfT `yaml:"sf"`
 }
 
 type UserT struct {
@@ -25,6 +26,12 @@ type UserT struct {
 type DeviceT struct {
     FromTrustedLocation int `yaml:"from_trusted_location"`
     NotWithinAllowedRequestRatePenalty int `yaml:"not_within_allowed_request_rate_penalty"`
+}
+
+type SfT struct {
+    Basic int `yaml:"basic"`
+    Advanced int `yaml:"advanced"`
+    Full int `yaml:"full"`
 }
 
 type ActionT struct {
