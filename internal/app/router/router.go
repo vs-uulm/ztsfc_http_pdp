@@ -56,10 +56,13 @@ func NewRouter(sysLogger *logger.Logger) *Router {
 	return router
 }
 
-type authResponse struct {
-	Allow bool     `json:"allow"`
-	Sfc   []string `json:"sfc"`
-}
+//type authResponse struct {
+//	Allow bool     `json:"allow"`
+//	Sfc   []struct {
+//        Sf string `json:"sf"`
+//        Md string `json:"md"`
+//    } `json:"sfc"`
+//}
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
@@ -70,15 +73,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     // TODO: return an error?
     // TODO: change order of the return values?
     // TODO: is allow only false if even with the longest sfc th trust score cant be increased sufficiently to hit the trust threshold?
-	sfc, allow := autho.PerformAuthorization(router.sysLogger, md)
+	authResponse := autho.PerformAuthorization(router.sysLogger, md)
 
 	// assemble a json response for the request and set header respectively
 	w.Header().Set("Content-Type", "application/json")
-	response := authResponse{
-		Allow: allow,
-		Sfc:   sfc,
-	}
-	json.NewEncoder(w).Encode(response)
+	//response := authResponse{
+	//	Allow: allow,
+	//	Sfc:   sfc,
+	//}
+	json.NewEncoder(w).Encode(authResponse)
 }
 
 func (router *Router) ListenAndServeTLS() error {

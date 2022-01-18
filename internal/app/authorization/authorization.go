@@ -12,6 +12,16 @@ import (
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust"
 )
 
+type AuthResponse struct {
+    Allow bool `json:"allow"`
+    Sfc []Sf `json:"sfc"`
+}
+
+type Sf struct {
+    Name string `json:"name"`
+    Md string `json:"md"`
+}
+
 //var (
 //	trustCalc *DataSources = NewDataSources()
 //)
@@ -26,7 +36,9 @@ sent to the service, sent to the DPI or be blocked.
 @return forwardSFC: List of identifiers for service functions. nil if request is not allowed at all.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
-func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwardSFC []string, allow bool) {
+func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthResponse {
+    var authResponse AuthResponse
+
     totalTrustScore := trust.CalcTrustScore(sysLogger, cpm)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
@@ -34,9 +46,21 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (forwar
 
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
     if totalTrustScore >= trustThreshold {
-        return []string{"logger"}, true
+        authResponse.Allow = true
+        //authResponse.Sfc = append(authResponse.Sfc, struct{
+        //        Sf string `json:"sf"`
+        //        Md string `json:"md"`
+        //    } {
+        //        Sf: "logger",
+        //        Md: "basic",
+        //    })
+
+        authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "logger", Md: "basic"})
+
+        return authResponse
     } else {
-        return nil, false
+        authResponse.Allow = false
+        return authResponse
     }
 	//if aggregatedTrust >= trustThreshold {
 	//	return []string{}, true
