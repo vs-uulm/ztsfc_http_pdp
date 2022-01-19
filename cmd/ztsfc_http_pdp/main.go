@@ -53,7 +53,7 @@ func init() {
     // Create empty CertPool that is needed for certificates the PDP accepts when from by the PEP
 	config.Config.Pdp.CaCertPoolPdpAcceptsFromPep = x509.NewCertPool()
 
-	if err = ini.InitPdpParams(); err != nil {
+	if err = ini.InitConfig(); err != nil {
 		sysLogger.Fatalf("main: init(): could not initialize PDP params: %v", err)
 	}
 
