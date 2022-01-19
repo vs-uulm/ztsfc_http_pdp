@@ -10,8 +10,8 @@ import (
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 	ini "github.com/vs-uulm/ztsfc_http_pdp/internal/app/init"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
-	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/yaml"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
+    yaml "github.com/leobrada/yaml_tools"
 )
 
 var (
