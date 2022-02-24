@@ -47,13 +47,17 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthRes
     trustThreshold := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
     if totalTrustScore >= trustThreshold {
         authResponse.Allow = true
-        authResponse.Sfc = nil
- //       authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "logger", Md: "basic"})
+//        authResponse.Sfc = nil
+        authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "basic"})
 
         return authResponse
     } else {
-        authResponse.Allow = false
+        authResponse.Allow = true
+        authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "logger", Md: "basic"}, Sf{Name: "ips", Md: "basic"})
         return authResponse
+
+        //authResponse.Allow = false
+        //return authResponse
     }
 	//if aggregatedTrust >= trustThreshold {
 	//	return []string{}, true

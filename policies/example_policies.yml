@@ -7,18 +7,22 @@ attributes:
     not_within_allowed_request_rate_penalty: 10
   sf:
     logger:
+      basic: 1
+      advanced: 2
+      full: 3
+    ips:
       basic: 5
       advanced: 10
       full: 15
 
 resources:
-  service1.testbed.informatik.uni-ulm.de:
+  service.example.com:
     actions:
       get:
         trust_threshold: 25
       post:
         trust_threshold: 35
     trusted_locations:
-      - "134.60.0.0/16" 
+      - "192.168.0.0/16" 
     allowed_requests_per_second: 3
     allowed_devices_per_user: 5
