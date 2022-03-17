@@ -1,4 +1,4 @@
-package trust
+package trust_engine
 
 /*
 In this file, the trust score of a request is calculated. According to the trust score it is decided, if a request is
