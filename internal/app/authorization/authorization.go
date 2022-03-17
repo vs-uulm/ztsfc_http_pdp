@@ -35,7 +35,7 @@ sent to the service, sent to the DPI or be blocked.
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthResponse {
     var authResponse AuthResponse
 
-    totalTrustScore := trust.CalcTrustScore(sysLogger, cpm)
+    totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
         cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
