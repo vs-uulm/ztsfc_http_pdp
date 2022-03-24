@@ -33,6 +33,6 @@ func (cpm *Cp_metadata) ExtractMetadata(sysLogger *logger.Logger, req *http.Requ
 	//cpm.FailedToday, _ = strconv.Atoi(req.URL.Query().Get("failedToday"))
 	cpm.Location = req.URL.Query().Get("location")
 
-    sysLogger.Debugf("metadata: ExtractMetadata(): User=%s, PwAuthenticated=%t, CertAuthenticated=%t, Resource=%s, Action=%s" +
-        ", Location=%s", cpm.User, cpm.PwAuthenticated, cpm.CertAuthenticated, cpm.Resource, cpm.Action, cpm.Location)
+    sysLogger.Debugf("metadata: ExtractMetadata(): User=%s, PwAuthenticated=%t, Device=%s, CertAuthenticated=%t, Resource=%s, Action=%s" +
+        ", Location=%s", cpm.User, cpm.PwAuthenticated, cpm.Device, cpm.CertAuthenticated, cpm.Resource, cpm.Action, cpm.Location)
 }

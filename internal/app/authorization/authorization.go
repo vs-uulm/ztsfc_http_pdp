@@ -8,8 +8,10 @@ forwarded or blocked.
 import (
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
+    rattr "github.com/vs-uulm/ztsfc_http_attributes"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust_engine"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
 )
 
 type AuthResponse struct {
@@ -34,6 +36,14 @@ sent to the service, sent to the DPI or be blocked.
 */
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthResponse {
     var authResponse AuthResponse
+
+    // Step 1: request user attributes
+    // TODO: implement 
+
+    // Step 2: request device attributes
+    devAttributes, _ := rattr.NewEmptyDevice()
+    attributes.RequestDeviceAttributes(cpm, devAttributes)
+    sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
 
     totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
 

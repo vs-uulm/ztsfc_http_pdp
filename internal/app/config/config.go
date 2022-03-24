@@ -3,6 +3,7 @@ package config
 import (
     "crypto/x509"
     "crypto/tls"
+    "net/http"
 )
 
 var (
@@ -12,6 +13,7 @@ var (
 type ConfigT struct {
     SysLogger sysLoggerT `yaml:"system_logger"`
     Pdp PdpT `yaml:"pdp"`
+    Pip PipT `yaml:"pip"`
 }
 
 type sysLoggerT struct {
@@ -28,4 +30,18 @@ type PdpT struct {
 
     CaCertPoolPdpAcceptsFromPep *x509.CertPool
     X509KeyPairShownByPdpToPep  tls.Certificate
+}
+
+type PipT struct {
+    TargetAddr string `yaml:"target_addr"`
+    DeviceEndpoint string `yaml:"device_endpoint"`
+
+    CertsPdpAcceptsWhenShownByPip []string `yaml:"certs_pdp_accepts_when_shown_by_pip"`
+    CertShownByPdpToPip string  `yaml:"cert_shown_by_pdp_to_pip"`
+    PrivkeyForCertShownByPdpToPip  string  `yaml:"privkey_for_cert_shown_by_pdp_to_pip"`
+
+    CaCertPoolPdpAcceptsFromPip *x509.CertPool
+    X509KeyPairShownByPdpToPip  tls.Certificate
+
+    PipClient *http.Client
 }
