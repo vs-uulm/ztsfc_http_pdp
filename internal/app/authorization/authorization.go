@@ -6,6 +6,8 @@ forwarded or blocked.
 */
 
 import (
+    "fmt"
+
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
     rattr "github.com/vs-uulm/ztsfc_http_attributes"
@@ -34,7 +36,7 @@ sent to the service, sent to the DPI or be blocked.
 @return forwardSFC: List of identifiers for service functions. nil if request is not allowed at all.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
-func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthResponse {
+func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthResponse, error) {
     var authResponse AuthResponse
 
     // Step 1: request user attributes
@@ -42,7 +44,11 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthRes
 
     // Step 2: request device attributes
     devAttributes, _ := rattr.NewEmptyDevice()
-    attributes.RequestDeviceAttributes(cpm, devAttributes)
+    err := attributes.RequestDeviceAttributes(sysLogger, cpm, devAttributes)
+    if err != nil {
+        return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting device attributes from PIP: %v", err)
+    }
+
     sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
 
     totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
@@ -55,10 +61,15 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) AuthRes
         authResponse.Allow = true
         authResponse.Sfc = nil
 
-        return authResponse
+        // Step X: update device attributes
+        if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, devAttributes); err != nil {
+            return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error updating device attributes to PIP: %v", err)
+        }
+
+        return authResponse, nil
     } else {
         authResponse.Allow = false
-        return authResponse
+        return authResponse, nil
 
         /* Example for adding SFs to the SFC
         authResponse.Allow = true

@@ -73,7 +73,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
     // TODO: return an error?
     // TODO: change order of the return values?
     // TODO: is allow only false if even with the longest sfc th trust score cant be increased sufficiently to hit the trust threshold?
-	authResponse := autho.PerformAuthorization(router.sysLogger, md)
+	authResponse, err := autho.PerformAuthorization(router.sysLogger, md)
+    if err != nil {
+        router.sysLogger.Errorf("router: ServeHTTP(): %v", err)
+        return
+    }
 
 	// assemble a json response for the request and set header respectively
 	w.Header().Set("Content-Type", "application/json")

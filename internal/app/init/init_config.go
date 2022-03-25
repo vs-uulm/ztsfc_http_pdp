@@ -9,5 +9,9 @@ func InitConfig() error {
         return fmt.Errorf("init: InitConfig(): %v", err)
     }
 
+    if err := initPipParams(); err != nil {
+        return fmt.Errorf("init: InitConfig(): %v", err)
+    }
+
     return nil
 }

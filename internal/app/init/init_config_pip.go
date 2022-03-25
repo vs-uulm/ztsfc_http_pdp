@@ -39,6 +39,9 @@ func initPipParams() error {
 
     config.Config.Pip.X509KeyPairShownByPdpToPip, err = gct.LoadX509KeyPair(config.Config.Pip.CertShownByPdpToPip,
         config.Config.Pip.PrivkeyForCertShownByPdpToPip)
+    if err != nil {
+        return fmt.Errorf("initPipParams(): error loading certificates PDP shows to PIP: %w", err)
+    }
 
     config.Config.Pip.PipClient = gct.NewHTTPSClient(config.Config.Pip.CaCertPoolPdpAcceptsFromPip, config.Config.Pip.X509KeyPairShownByPdpToPip)
 
