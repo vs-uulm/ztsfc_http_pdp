@@ -49,8 +49,16 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
         return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting device attributes from PIP: %v", err)
     }
 
+    // Step Y: check policie rules
+    if devAttributes.Revoked {
+        sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is revoked", devAttributes.DeviceID)
+        authResponse.Allow = false
+        return authResponse, nil
+    }
+
     sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
 
+    // Step B: calculate trust score
     totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
