@@ -28,6 +28,10 @@ func RequestDeviceAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, dev 
         return fmt.Errorf("attributes: RequestDeviceAttributes(): unable to send device request to PIP: %w", err)
     }
 
+    if pipResp.StatusCode != 200 {
+        return nil
+    }
+
     err = json.NewDecoder(pipResp.Body).Decode(dev)
     if err != nil {
         return fmt.Errorf("attributes: RequestDeviceAttributes(): unable to decode the PIP response: %w", err)

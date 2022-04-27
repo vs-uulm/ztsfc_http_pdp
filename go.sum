@@ -10,8 +10,8 @@ github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
-github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20220324082636-3dfeeffc6133 h1:V+J65j7sp1twqSHqysy/CXy6uFFe6IJU6X2D+ugCKe0=
-github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20220324082636-3dfeeffc6133/go.mod h1:UtWW5IW19hJTM0sEwrq1zXYtl5Rn8F9ZhNJMl2nGktM=
+github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20220401064049-e651ed434f2d h1:Wz22wKjVCO4IiGKWiB3UhHbGr3s5GFplJRar9Qy6g3I=
+github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20220401064049-e651ed434f2d/go.mod h1:UtWW5IW19hJTM0sEwrq1zXYtl5Rn8F9ZhNJMl2nGktM=
 github.com/vs-uulm/ztsfc_http_logger v0.0.0-20220114090830-1511ee49f8df h1:UzH7suKtDOwUAKNNOJBbK+KJeOvZdSRqhtwb5t7T6H4=
 github.com/vs-uulm/ztsfc_http_logger v0.0.0-20220114090830-1511ee49f8df/go.mod h1:nMQjdzVj5ytXMyxmRBPqWuM04x05OdhLuy6eK/99UCc=
 golang.org/x/sys v0.0.0-20191026070338-33540a1f6037 h1:YyJpGZS1sBuBCzLAR1VEpK193GlqGZbnPFnPV/5Rsb4=

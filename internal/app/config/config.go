@@ -36,6 +36,7 @@ type PipT struct {
     TargetAddr string `yaml:"target_addr"`
     DeviceEndpoint string `yaml:"device_endpoint"`
     UpdateDeviceEndpoint string `yaml:"update_device_endpoint"`
+    SystemEndpoint string `yaml:"system_endpoint"`
 
     CertsPdpAcceptsWhenShownByPip []string `yaml:"certs_pdp_accepts_when_shown_by_pip"`
     CertShownByPdpToPip string  `yaml:"cert_shown_by_pdp_to_pip"`

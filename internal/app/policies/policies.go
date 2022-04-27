@@ -20,10 +20,10 @@ type AttributesT struct {
 
 type UserT struct {
     PwAuthenticated    int `yaml:"pw_authenticated"`
-    CertAuthenticated   int `yaml:"cert_authenticated"`
 }
 
 type DeviceT struct {
+    CertAuthenticated   int `yaml:"cert_authenticated"`
     FromTrustedLocation int `yaml:"from_trusted_location"`
     NotWithinAllowedRequestRatePenalty int `yaml:"not_within_allowed_request_rate_penalty"`
 }

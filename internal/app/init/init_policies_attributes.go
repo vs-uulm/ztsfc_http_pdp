@@ -24,18 +24,18 @@ func initUser() error {
     if policies.Policies.Attributes.User.PwAuthenticated < 0 {
         return errors.New("initUser(): attribute 'pw_authenticated' is negative")
     }
-    if policies.Policies.Attributes.User.CertAuthenticated < 0 {
-        return errors.New("initUser(): attribute 'cert_authenticated' is negative")
-    }
     return nil
 }
 
 func initDevice() error {
+    if policies.Policies.Attributes.Device.CertAuthenticated < 0 {
+        return errors.New("initDevice(): attribute 'cert_authenticated' is negative")
+    }
     if policies.Policies.Attributes.Device.FromTrustedLocation < 0 {
-        return errors.New("initUser(): attribute 'from_trusted_location' is negative")
+        return errors.New("initDevice(): attribute 'from_trusted_location' is negative")
     }
     if policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty < 0 {
-        return errors.New("initUser(): attribute 'not_within_allowed_request_rate_penalty' is negative")
+        return errors.New("initDevice(): attribute 'not_within_allowed_request_rate_penalty' is negative")
     }
     return nil
 }

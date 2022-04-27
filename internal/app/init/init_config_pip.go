@@ -16,6 +16,7 @@ func initPipParams() error {
     }
 
     // TODO: add device endpoint? or is it ok if its left empty?
+    // TODO: add system endpoint? or it it ok if its left empty?
 
     if config.Config.Pip.CertsPdpAcceptsWhenShownByPip == nil {
         fields += "certs_pep_accepts_when_shown_by_pip"

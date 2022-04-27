@@ -8,6 +8,7 @@ forwarded or blocked.
 import (
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
+    rattr "github.com/vs-uulm/ztsfc_http_attributes"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
@@ -44,10 +45,6 @@ func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
         trust += policies.Policies.Attributes.User.PwAuthenticated
     }
 
-    if cpm.CertAuthenticated {
-        trust += policies.Policies.Attributes.User.CertAuthenticated
-    }
-
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
         cpm.User, cpm.Resource, cpm.Action, trust)
 
@@ -66,6 +63,10 @@ In this function the trust score of the device attributes is calculated
 func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
+    if cpm.CertAuthenticated {
+        trust += policies.Policies.Attributes.Device.CertAuthenticated
+    }
+
     if deviceAccessFromTrustedLocation(cpm) {
         trust += policies.Policies.Attributes.Device.FromTrustedLocation
     }
@@ -79,4 +80,12 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
         cpm.User, cpm.Resource, cpm.Action, trust)
 
 	return trust
+}
+
+func CalcTrustThreshold(sysLogger *logger.Logger, cpm *md.Cp_metadata, system *rattr.System) int {
+    var adjustedTrustThreshold int
+    adjustedTrustThreshold = policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
+    adjustedTrustThreshold = adjustedTrustThreshold + (system.ThreatLevel * 10)
+    sysLogger.Debugf("THREAT LEVEL=%d RESULTS IN ADJUSTED TRUST TRESHOLD=%d", system.ThreatLevel, adjustedTrustThreshold)
+    return adjustedTrustThreshold
 }
