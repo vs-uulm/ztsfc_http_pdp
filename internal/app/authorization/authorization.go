@@ -75,6 +75,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
         authResponse.Reason = "Your request was rejected since your device is not managed by the device DB"
         return authResponse, nil
     }
+    // TODO DANi/GEORG: Die variable devAttributes.Revoked (boolean)
     if devAttributes != nil && devAttributes.Revoked {
         sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is revoked", devAttributes.DeviceID)
         authResponse.Allow = false
@@ -85,7 +86,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
 
     // Step B: calculate trust score
-    // TODO DANI/GEORG: totalTrustScore pro anfrage; also immer hier wenn die funktion aufgerufen wird; 
+    // TODO DANI/GEORG: totalTrustScore (int) pro anfrage; also immer hier wenn die funktion aufgerufen wird; 
     // In der Funktion hier sind auch noch zwei zu exportierenden Variablen.
     // Wenn die Policy oben in Step Y aber schon negativ ergibt was dann?
     totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
@@ -94,6 +95,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
         cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
 
     // TODO DANI/GEORG: die variable system.ThreatLevel (int64) die im zeitlichen Verlauf dargestellt werden soll.
+    // TODO DANI/GEORG: die variable trustThreshold (int)
     trustThreshold := trust_engine.CalcTrustThreshold(sysLogger, cpm, system)
 
     // Step Y: make authorization decision
