@@ -38,6 +38,7 @@ sent to the service, sent to the DPI or be blocked.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthResponse, error) {
+    // TODO DANI/GEORG: Immer das struct AuthReponsse wenn die Funktion returned
     var authResponse AuthResponse
     var devAttributes *rattr.Device = nil
 
@@ -84,18 +85,23 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
 
     // Step B: calculate trust score
+    // TODO DANI/GEORG: totalTrustScore pro anfrage; also immer hier wenn die funktion aufgerufen wird; 
+    // In der Funktion hier sind auch noch zwei zu exportierenden Variablen.
+    // Wenn die Policy oben in Step Y aber schon negativ ergibt was dann?
     totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
         cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
 
+    // TODO DANI/GEORG: die variable system.ThreatLevel (int64) die im zeitlichen Verlauf dargestellt werden soll.
     trustThreshold := trust_engine.CalcTrustThreshold(sysLogger, cpm, system)
 
+    // Step Y: make authorization decision
     if totalTrustScore >= trustThreshold {
         authResponse.Allow = true
         authResponse.Sfc = nil
 
-        // Step X: update device attributes
+        // Step Z: update device attributes
         if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, devAttributes); err != nil {
             return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error updating device attributes to PIP: %v", err)
         }
