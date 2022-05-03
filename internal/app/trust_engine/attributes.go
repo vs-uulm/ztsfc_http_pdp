@@ -16,7 +16,12 @@ import (
 )
 
 func deviceAccessFromTrustedLocation(cpm *md.Cp_metadata) bool {
-    for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
+    resource, ok := policies.Policies.Resources[cpm.Resource]
+    if !ok {
+        return false
+    }
+
+    for _, trustedNetwork := range resource.TrustedIPNetworks {
         if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
             return true
         }
@@ -33,7 +38,7 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
     if !exists {
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 1),
             PenaltyTimestamp: time.Time{},
         }
     } else if len(user) >= maxDevicesPerUser {
@@ -42,12 +47,12 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
             break
         }
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 1),
             PenaltyTimestamp: time.Time{},
         }
     } else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 1),
             PenaltyTimestamp: time.Time{},
         }
     }
@@ -64,7 +69,7 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
 
     within = policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].AccessLimit.Allow()
     if !within {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Minute * 5)
+        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Second * 20)
     }
 
     return within

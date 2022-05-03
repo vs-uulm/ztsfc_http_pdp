@@ -7,6 +7,7 @@ forwarded or blocked.
 
 import (
     "fmt"
+    "time"
 
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
@@ -42,13 +43,27 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     var authResponse AuthResponse
     var devAttributes *rattr.Device = nil
 
+    // Step 3: request system attributes
+    system := rattr.NewEmptySystem()
+    err := attributes.RequestSystemAttributes(sysLogger, system)
+    if err != nil {
+        return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting system attributes from PIP: %v", err)
+    }
+
     // Step 1: request user attributes
     // TODO: implement 
 
     // Step 2: request device attributes
     if len(cpm.Device) == 0 {
-        sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses an unknown device from '%s' for their request",
-            cpm.User, cpm.Location)
+    // sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses an unknown device from '%s' for their request",
+    // cpm.User, cpm.Location)
+        sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is not authenticated", cpm.Device)
+        authResponse.Allow = false
+        authResponse.Reason = "Your request was rejected since your device is not authenticated"
+        sysLogger.Infof("GUI OUTPUT: %s, %d, %s, -, -, -, -, %s, %s, %v, %s, -", 
+            time.Now(), system.ThreatLevel, cpm.User, cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason)
+        return authResponse, nil
+
     } else {
         devAttributes, _ = rattr.NewEmptyDevice()
         err := attributes.RequestDeviceAttributes(sysLogger, cpm, devAttributes)
@@ -59,13 +74,6 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
             sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses a device PIP has no information about from '%s' for their request",
                 cpm.User, cpm.Location)
         }
-    }
-
-    // Step 3: request system attributes
-    system := rattr.NewEmptySystem()
-    err := attributes.RequestSystemAttributes(sysLogger, system)
-    if err != nil {
-        return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting system attributes from PIP: %v", err)
     }
 
     // Step Y: check policie rules
@@ -89,7 +97,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     // TODO DANI/GEORG: totalTrustScore (int) pro anfrage; also immer hier wenn die funktion aufgerufen wird; 
     // In der Funktion hier sind auch noch zwei zu exportierenden Variablen.
     // Wenn die Policy oben in Step Y aber schon negativ ergibt was dann?
-    totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
+    totalTrustScore, userTrustScore, deviceTrustScore := trust_engine.ShowCaseCalcTrustScore(sysLogger, cpm)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
         cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
@@ -102,6 +110,9 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     if totalTrustScore >= trustThreshold {
         authResponse.Allow = true
         authResponse.Sfc = nil
+        sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
+            time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
+            cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
 
         // Step Z: update device attributes
         if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, devAttributes); err != nil {
@@ -112,6 +123,9 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     } else {
         authResponse.Allow = false
         authResponse.Reason = "Your request was rejected since your total trust score is too low"
+        sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
+            time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
+            cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
         return authResponse, nil
 
         /* Example for adding SFs to the SFC

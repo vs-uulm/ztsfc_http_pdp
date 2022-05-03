@@ -30,6 +30,16 @@ func CalcTrustScore(sysLogger *logger.Logger, cpm *md.Cp_metadata) int {
     return totalTrustScore
 }
 
+func ShowCaseCalcTrustScore(sysLogger *logger.Logger, cpm *md.Cp_metadata) (int,int,int) {
+	userTrust := calcUserTrust(sysLogger, cpm)
+
+	deviceTrust := calcDeviceTrust(sysLogger, cpm)
+
+	totalTrustScore := userTrust + deviceTrust
+
+    return totalTrustScore,userTrust,deviceTrust
+}
+
 /*
 In this fuction the trust score of the user attributes is calculated
 
@@ -62,6 +72,8 @@ In this function the trust score of the device attributes is calculated
 */
 func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
+
+    sysLogger.Debugf("CERT AUTHENTICATED: %b", cpm.CertAuthenticated)
 
     if cpm.CertAuthenticated {
         trust += policies.Policies.Attributes.Device.CertAuthenticated
