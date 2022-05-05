@@ -15,6 +15,7 @@ import (
     //"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust_engine"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
 type AuthResponse struct {
@@ -121,6 +122,31 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 
         return authResponse, nil
     } else {
+
+        // Add SFs to th SFC to increase the trust score
+        if trustThreshold <= totalTrustScore + policies.Policies.Attributes.Sf["ips"].Basic {
+            authResponse.Allow = true
+            authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "basic"})
+            sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
+                time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
+                cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+            return authResponse, nil
+        } else if trustThreshold <= totalTrustScore + policies.Policies.Attributes.Sf["ips"].Advanced {
+            authResponse.Allow = true
+            authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "advanced"})
+            sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
+                time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
+                cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+            return authResponse, nil
+        } else if trustThreshold <= totalTrustScore + policies.Policies.Attributes.Sf["ips"].Full {
+            authResponse.Allow = true
+            authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "full"})
+            sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
+                time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
+                cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+            return authResponse, nil
+        }
+
         authResponse.Allow = false
         authResponse.Reason = "Your request was rejected since your total trust score is too low"
         sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
