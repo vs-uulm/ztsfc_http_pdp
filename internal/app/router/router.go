@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-    autho "github.com/vs-uulm/ztsfc_http_pdp/internal/app/authorization"
-    logger "github.com/vs-uulm/ztsfc_http_logger"
-    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
-    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
+	logger "github.com/vs-uulm/ztsfc_http_logger"
+	autho "github.com/vs-uulm/ztsfc_http_pdp/internal/app/authorization"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/jsonlogsender"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
 )
 
 const (
@@ -20,15 +21,17 @@ type Router struct {
 	frontend_tls_config *tls.Config
 	frontend_server     *http.Server
 
-    sysLogger           *logger.Logger
+	sysLogger *logger.Logger
+	logSender *jsonlogsender.JSONLogSender
 }
 
-func NewRouter(sysLogger *logger.Logger) *Router {
+func NewRouter(sysLogger *logger.Logger, logSender *jsonlogsender.JSONLogSender) *Router {
 
 	// Create new Router
 	router := new(Router)
 
-    router.sysLogger = sysLogger
+	router.sysLogger = sysLogger
+	router.logSender = logSender
 
 	// Create TLS config for frontend server
 	router.frontend_tls_config = &tls.Config{
@@ -69,15 +72,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	md := new(metadata.Cp_metadata)
 	md.ExtractMetadata(router.sysLogger, req)
 
-    // Performs the Authorization; returns the determined SFC as well as the authorization decision itself.
-    // TODO: return an error?
-    // TODO: change order of the return values?
-    // TODO: is allow only false if even with the longest sfc th trust score cant be increased sufficiently to hit the trust threshold?
-	authResponse, err := autho.PerformAuthorization(router.sysLogger, md)
-    if err != nil {
-        router.sysLogger.Errorf("router: ServeHTTP(): %v", err)
-        return
-    }
+	// Performs the Authorization; returns the determined SFC as well as the authorization decision itself.
+	// TODO: return an error?
+	// TODO: change order of the return values?
+	// TODO: is allow only false if even with the longest sfc th trust score cant be increased sufficiently to hit the trust threshold?
+	authResponse, err := autho.PerformAuthorization(router.sysLogger, router.logSender, md)
+	if err != nil {
+		router.sysLogger.Errorf("router: ServeHTTP(): %s", err.Error())
+		return
+	}
 
 	// assemble a json response for the request and set header respectively
 	w.Header().Set("Content-Type", "application/json")

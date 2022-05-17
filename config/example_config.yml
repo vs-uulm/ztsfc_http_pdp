@@ -9,3 +9,9 @@ pdp:
     - ./certs/example_cert.crt
   cert_shown_by_pdp_to_pep: ./certs/you_show_to_pep.crt
   privkey_for_cert_shown_by_pdp_to_pep: ./certs/corresponding_priv.key
+  logging_hook:
+    hook_url: "http://loki.example.com:3100/loki/api/v1/push"
+    cert_shown_by_pdp_to_hook: ./certs/you_show_to_pep.crt
+    privkey_for_cert_shown_by_pdp_to_hook: ./certs/corresponding_priv.key
+    certs_pdp_accepts_when_shown_by_hook:
+      - ./certs/example_cert.crt
