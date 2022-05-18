@@ -95,6 +95,13 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is not present in the device DB", cpm.Device)
 		authResponse.Allow = false
 		authResponse.Reason = "Your request was rejected since your device is not managed by the device DB"
+
+		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "-", "unknown", "-", "-",
+			cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow), authResponse.Reason, "-")
+		if err != nil {
+			return authResponse, fmt.Errorf("1 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
+		}
+
 		return authResponse, nil
 	}
 	// TODO DANi/GEORG: Die variable devAttributes.Revoked (boolean)

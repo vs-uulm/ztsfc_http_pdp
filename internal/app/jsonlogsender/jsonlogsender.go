@@ -44,7 +44,6 @@ func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, res
 		{"stream":
 			{"job": "%s",
 			 "tl": "%s",
-			 "user": "%s",
 			 "uts": "%s",
 			 "device": "%s",
 			 "dts": "%s",
@@ -55,8 +54,8 @@ func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, res
 			 "reason": "%s",
 			 "sfc": "%s"},
 		 "values":
-		 	[[ "%d", {"mes":"messageABC"} ]]}
-	]}`, job, threatLevel, user, uts, device, dts, tts, resource, action, decision, reason, sfc, time.Now().UnixNano())
+		 	[[ "%d", {"user": "%s", "mes":"messageABC"} ]]}
+	]}`, job, threatLevel, uts, device, dts, tts, resource, action, decision, reason, sfc, time.Now().UnixNano(), user)
 
 	fmt.Printf("JSON log to be sent: %s\n", s)
 
