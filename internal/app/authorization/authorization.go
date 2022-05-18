@@ -109,6 +109,14 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is revoked", devAttributes.DeviceID)
 		authResponse.Allow = false
 		authResponse.Reason = "Your request was rejected since your device is revoked"
+
+		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "-", cpm.Device,
+			"-", "-", cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
+			authResponse.Reason, sfcToString(authResponse.Sfc))
+		if err != nil {
+			return authResponse, fmt.Errorf("2 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
+		}
+
 		return authResponse, nil
 	}
 
