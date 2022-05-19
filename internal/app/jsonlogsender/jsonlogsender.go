@@ -57,7 +57,7 @@ func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, location, dts
 			 "reason": "%s",
 			 "sfc": "%s"},
 		 "values":
-		 	[[ "%d" ]]}
+		 	[[ "%d", {"message":"log update"} ]]}
 	]}`, job, user, threatLevel, uts, device, location, dts, tts, resource, action, decision, reason, sfc, time.Now().UnixNano())
 
 	fmt.Printf("JSON log to be sent: %s\n", s)
