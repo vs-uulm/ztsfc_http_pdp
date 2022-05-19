@@ -40,7 +40,7 @@ func New(url string) (*JSONLogSender, error) {
 	}, nil
 }
 
-func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, resource, action, decision, reason, location string, sfc string) error {
+func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, location, dts, tts, resource, action, decision, reason, sfc string) error {
 	s := fmt.Sprintf(`{"streams": [
 		{"stream":
 			{"job": "%s",
