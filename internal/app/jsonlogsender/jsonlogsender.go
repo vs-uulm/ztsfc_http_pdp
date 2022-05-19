@@ -26,6 +26,7 @@ type LogToSend struct {
 	Decision    string
 	Reason      string
 	Sfc         string
+	Location    string
 }
 
 func New(url string) (*JSONLogSender, error) {
@@ -39,13 +40,14 @@ func New(url string) (*JSONLogSender, error) {
 	}, nil
 }
 
-func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, resource, action, decision, reason string, sfc string) error {
+func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, resource, action, decision, reason, location string, sfc string) error {
 	s := fmt.Sprintf(`{"streams": [
 		{"stream":
 			{"job": "%s",
 			 "tl": "%s",
 			 "uts": "%s",
 			 "device": "%s",
+			 "location": "%s",
 			 "dts": "%s",
 			 "tts": "%s",
 			 "resource": "%s",
@@ -55,7 +57,7 @@ func (ls *JSONLogSender) Send(job, threatLevel, user, uts, device, dts, tts, res
 			 "sfc": "%s"},
 		 "values":
 		 	[[ "%d", {"user": "%s", "mes":"messageABC"} ]]}
-	]}`, job, threatLevel, uts, device, dts, tts, resource, action, decision, reason, sfc, time.Now().UnixNano(), user)
+	]}`, job, threatLevel, uts, device, location, dts, tts, resource, action, decision, reason, sfc, time.Now().UnixNano(), user)
 
 	fmt.Printf("JSON log to be sent: %s\n", s)
 
