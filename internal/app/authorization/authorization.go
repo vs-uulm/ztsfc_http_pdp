@@ -166,7 +166,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
 			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
-				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
+				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Basic), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
 			if err != nil {
 				return authResponse, fmt.Errorf("3 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
@@ -179,7 +179,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
 			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
-				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
+				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Advanced), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
 			if err != nil {
 				return authResponse, fmt.Errorf("4 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
@@ -192,7 +192,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
 			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
-				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
+				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Full), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
 			if err != nil {
 				return authResponse, fmt.Errorf("5 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
