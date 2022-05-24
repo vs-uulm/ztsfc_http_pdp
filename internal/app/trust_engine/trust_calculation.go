@@ -84,6 +84,7 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
 	}
 
 	if !withinAllowedRequestRate(cpm) {
+	    sysLogger.Debugf("NOT WITHIN ALLOWED ACCESS RATE")
 		trust -= policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty
 
 	}
