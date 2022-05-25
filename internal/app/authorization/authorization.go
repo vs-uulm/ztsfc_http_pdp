@@ -15,7 +15,6 @@ import (
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/jsonlogsender"
 	md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
 
-	//"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust_engine"
@@ -63,16 +62,12 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 
 	// Step 2: request device attributes
 	if len(cpm.Device) == 0 {
-		// sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses an unknown device from '%s' for their request",
-		// cpm.User, cpm.Location)
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is not authenticated", cpm.Device)
 		authResponse.Allow = false
 		authResponse.Reason = "Your request was rejected since your device is not authenticated"
-		// sysLogger.Infof("GUI OUTPUT: %s, %d, %s, -, -, -, -, %s, %s, %v, %s, -",
-		// 	time.Now(), system.ThreatLevel, cpm.User, cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason)
 
-		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "-", "unknown", cpm.Location, "-", "-",
-			cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow), authResponse.Reason, "-")
+		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "0", "unknown", cpm.Location, "0", "0",
+			cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow), authResponse.Reason, "[]")
 		if err != nil {
 			return authResponse, fmt.Errorf("1 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
 		}
@@ -96,8 +91,8 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		authResponse.Allow = false
 		authResponse.Reason = "Your request was rejected since your device is not managed by the device DB"
 
-		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "-", "unknown", cpm.Location, "-", "-",
-			cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow), authResponse.Reason, "-")
+		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "0", "unknown", cpm.Location, "0", "0",
+			cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow), authResponse.Reason, "[]")
 		if err != nil {
 			return authResponse, fmt.Errorf("1 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
 		}
@@ -110,8 +105,8 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		authResponse.Allow = false
 		authResponse.Reason = "Your request was rejected since your device is revoked"
 
-		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "-", cpm.Device, cpm.Location,
-			"-", "-", cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
+		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, "0", cpm.Device, cpm.Location,
+			"0", "0", cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 			authResponse.Reason, sfcToString(authResponse.Sfc))
 		if err != nil {
 			return authResponse, fmt.Errorf("2 authorization: PerformAuthorization(): sending log to hook error: %s", err.Error())
@@ -139,9 +134,6 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 	if totalTrustScore >= trustThreshold {
 		authResponse.Allow = true
 		authResponse.Sfc = nil
-		// sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
-		// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
-		// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
 
 		err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
 			fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
@@ -162,9 +154,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		if trustThreshold <= totalTrustScore+policies.Policies.Attributes.Sf["ips"].Basic {
 			authResponse.Allow = true
 			authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "basic"})
-			// sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
-			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
-			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
 				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Basic), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
@@ -175,9 +165,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		} else if trustThreshold <= totalTrustScore+policies.Policies.Attributes.Sf["ips"].Advanced {
 			authResponse.Allow = true
 			authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "advanced"})
-			// sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
-			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
-			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
 				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Advanced), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
@@ -188,9 +176,7 @@ func PerformAuthorization(sysLogger *logger.Logger, logSender *jsonlogsender.JSO
 		} else if trustThreshold <= totalTrustScore+policies.Policies.Attributes.Sf["ips"].Full {
 			authResponse.Allow = true
 			authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "ips", Md: "full"})
-			// sysLogger.Infof("GUI OUTPUT: %s, %d, %s, %d, %s, %d, %d, %s, %s, %v, %s, %v",
-			// 	time.Now(), system.ThreatLevel, cpm.User, userTrustScore, cpm.Device, deviceTrustScore, totalTrustScore,
-			// 	cpm.Resource, cpm.Action, authResponse.Allow, authResponse.Reason, authResponse.Sfc)
+
 			err = logSender.Send("ztsfc_pdp", fmt.Sprint(system.ThreatLevel), cpm.User, fmt.Sprint(userTrustScore), cpm.Device, cpm.Location,
 				fmt.Sprint(deviceTrustScore), fmt.Sprint(totalTrustScore+policies.Policies.Attributes.Sf["ips"].Full), cpm.Resource, cpm.Action, fmt.Sprint(authResponse.Allow),
 				authResponse.Reason, sfcToString(authResponse.Sfc))
