@@ -13,7 +13,7 @@ import (
     logger "github.com/vs-uulm/ztsfc_http_logger"
 )
 
-func RequestDeviceAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, dev *rattr.Device) error {
+func requestDeviceAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, dev *rattr.Device) error {
 
     devReq, err := http.NewRequest("GET", config.Config.Pip.TargetAddr+config.Config.Pip.DeviceEndpoint, nil)
     if err != nil {

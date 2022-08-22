@@ -7,6 +7,7 @@ import (
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
     gct "github.com/leobrada/golang_convenience_tools"
 )
+
 func initPipParams() error {
     fields := ""
     var err error
@@ -16,10 +17,11 @@ func initPipParams() error {
     }
 
     // TODO: add device endpoint? or is it ok if its left empty?
+    // TODO: add user endpoint? or is it ok if its left empty?
     // TODO: add system endpoint? or it it ok if its left empty?
 
     if config.Config.Pip.CertsPdpAcceptsWhenShownByPip == nil {
-        fields += "certs_pep_accepts_when_shown_by_pip"
+        fields += "certs_pdp_accepts_when_shown_by_pip"
     }
 
     if config.Config.Pip.CertShownByPdpToPip == "" {

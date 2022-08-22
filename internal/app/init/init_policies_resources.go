@@ -26,6 +26,8 @@ func initResourcesParams() error {
             return errors.New("init: InitResourcesParams(): for resource '" + resName + "' no actions are defined")
         }
 
+        // TODO: Implement Threshold Attributes
+
         // Iterates over all defined actions for each resource
         for action, val := range resource.Actions {
             upperAction := strings.ToUpper(action)

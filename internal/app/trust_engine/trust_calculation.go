@@ -6,6 +6,8 @@ forwarded or blocked.
 */
 
 import (
+    "time"
+
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
     rattr "github.com/vs-uulm/ztsfc_http_attributes"
@@ -20,10 +22,10 @@ In this function the totalTrustScore is calculated; it comprises of user and dev
 
 @return trust: calculated total trust score 
 */
-func CalcTrustScore(sysLogger *logger.Logger, cpm *md.Cp_metadata) int {
-	userTrust := calcUserTrust(sysLogger, cpm)
+func CalcTrustScoreAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User, device *rattr.Device) int {
+	userTrust := calcUserTrustAdditive(sysLogger, cpm, user)
 
-	deviceTrust := calcDeviceTrust(sysLogger, cpm)
+	deviceTrust := calcDeviceTrustAdditive(sysLogger, cpm)
 
 	totalTrustScore := userTrust + deviceTrust
 
@@ -31,18 +33,29 @@ func CalcTrustScore(sysLogger *logger.Logger, cpm *md.Cp_metadata) int {
 }
 
 /*
-In this fuction the trust score of the user attributes is calculated
-
-@param sysLogger: used to print debug messages
-@param cpm: holds all user and device metadata
-
-@return trust: calculated user trust 
+Considered Attributes:
+    - PW Authentication
+    - Usual Times
+    - Usual Service
 */
-func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
+func calcUserTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) (trust int) {
 	trust = 0
 
     if cpm.PwAuthenticated {
-        trust += policies.Policies.Attributes.User.PwAuthenticated
+        if user.FailedPWAuthentication <= policies.Policies.Attributes.User.PwAuthenticated {
+            trust += policies.Policies.Attributes.User.PwAuthenticated - user.FailedPWAuthentication
+        }
+    }
+
+    requestTime := time.Now().Hour()
+    if requestTime >= user.UsualTimeBegin && requestTime <= user.UsualTimeEnd {
+        trust += policies.Policies.Attributes.User.UsualTime
+    }
+
+    for _, service := range user.UsualServices {
+        if cpm.Resource == service {
+            trust += policies.Policies.Attributes.User.UsualService
+        }
     }
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
@@ -53,14 +66,12 @@ func calcUserTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 }
 
 /*
-In this function the trust score of the device attributes is calculated
-
-@param sysLogger: used to print debug messages
-@param cpm: holds all user and device metadata
-
-@return trust: trust score of device attributes
+Considered Attributes:
+    - Device Certificate Authentication
+    - Device Location
+    - Request Rate
 */
-func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
+func calcDeviceTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) {
 	trust = 0
 
     if cpm.CertAuthenticated {
@@ -71,8 +82,8 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
         trust += policies.Policies.Attributes.Device.FromTrustedLocation
     }
 
-    if !withinAllowedRequestRate(cpm) {
-        trust -= policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty
+    if withinAllowedRequestRate(cpm) {
+        trust += policies.Policies.Attributes.Device.WithinAllowedRequestRate
 
     }
 
@@ -82,10 +93,18 @@ func calcDeviceTrust(sysLogger *logger.Logger, cpm *md.Cp_metadata) (trust int) 
 	return trust
 }
 
-func CalcTrustThreshold(sysLogger *logger.Logger, cpm *md.Cp_metadata, system *rattr.System) int {
-    var adjustedTrustThreshold int
-    adjustedTrustThreshold = policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
-    adjustedTrustThreshold = adjustedTrustThreshold + (system.ThreatLevel * 10)
-    sysLogger.Debugf("THREAT LEVEL=%d RESULTS IN ADJUSTED TRUST TRESHOLD=%d", system.ThreatLevel, adjustedTrustThreshold)
-    return adjustedTrustThreshold
+func CalcTrustThresholdAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, system *rattr.System) (threshold int) {
+    threshold = 0
+
+    // Add static values (will change later)
+    threshold += policies.Policies.Resources[cpm.Resource].TargetSensitivity
+    threshold += policies.Policies.Resources[cpm.Resource].ProtocolSecurity
+    threshold += policies.Policies.Resources[cpm.Resource].TargetState
+    threshold += policies.Policies.Resources[cpm.Resource].TargetHealth
+    threshold += policies.Policies.Resources[cpm.Resource].TargetVuln
+    threshold += policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
+
+    // Dynamic attributes (will change later)
+    threshold += (int(system.ThreatLevel) * 10)
+    return threshold
 }

@@ -25,6 +25,7 @@ func deviceAccessFromTrustedLocation(cpm *md.Cp_metadata) bool {
     return false
 }
 
+// TODO: remove maxDevicesPerUser
 func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
     maxDevicesPerUser := 5
 

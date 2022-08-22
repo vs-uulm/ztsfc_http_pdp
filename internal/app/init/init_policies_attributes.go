@@ -24,6 +24,12 @@ func initUser() error {
     if policies.Policies.Attributes.User.PwAuthenticated < 0 {
         return errors.New("initUser(): attribute 'pw_authenticated' is negative")
     }
+    if policies.Policies.Attributes.User.UsualTime < 0 {
+        return errors.New("initUser(): attribute 'usual_time' is negative")
+    }
+    if policies.Policies.Attributes.User.UsualService < 0 {
+        return errors.New("initUser(): attribute 'usual_service' is negative")
+    }
     return nil
 }
 
@@ -34,8 +40,8 @@ func initDevice() error {
     if policies.Policies.Attributes.Device.FromTrustedLocation < 0 {
         return errors.New("initDevice(): attribute 'from_trusted_location' is negative")
     }
-    if policies.Policies.Attributes.Device.NotWithinAllowedRequestRatePenalty < 0 {
-        return errors.New("initDevice(): attribute 'not_within_allowed_request_rate_penalty' is negative")
+    if policies.Policies.Attributes.Device.WithinAllowedRequestRate < 0 {
+        return errors.New("initDevice(): attribute 'within_allowed_request_rate' is negative")
     }
     return nil
 }

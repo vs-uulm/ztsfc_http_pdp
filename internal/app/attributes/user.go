@@ -6,28 +6,33 @@ import (
     "fmt"
 
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
+    md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     rattr "github.com/vs-uulm/ztsfc_http_attributes"
     logger "github.com/vs-uulm/ztsfc_http_logger"
 )
 
-func requestSystemAttributes(sysLogger *logger.Logger, system *rattr.System) error {
+func requestUserAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, usr *rattr.User) error {
 
-    systemReq, err := http.NewRequest("GET", config.Config.Pip.TargetAddr+config.Config.Pip.SystemEndpoint, nil)
+    usrReq, err := http.NewRequest("GET", config.Config.Pip.TargetAddr+config.Config.Pip.UserEndpoint, nil)
     if err != nil {
-        return fmt.Errorf("attributes: RequestDeviceAttributes(): unable to create device attribute request for PIP: %w", err)
+        return fmt.Errorf("attributes: RequestUserAttributes(): unable to create device attribute request for PIP: %w", err)
     }
-    //devReqQuery := devReq.URL.Query()
-    //devReqQuery.Set("system", cpm.Device)
-    //devReq.URL.RawQuery = devReqQuery.Encode()
+    usrReqQuery := usrReq.URL.Query()
+    usrReqQuery.Set("user", cpm.User)
+    usrReq.URL.RawQuery = usrReqQuery.Encode()
 
-    pipResp, err := config.Config.Pip.PipClient.Do(systemReq)
+    pipResp, err := config.Config.Pip.PipClient.Do(usrReq)
     if err != nil {
-        return fmt.Errorf("attributes: RequestSystemAttributes(): unable to send system request to PIP: %w", err)
+        return fmt.Errorf("attributes: RequestUserAttributes(): unable to send user request to PIP: %w", err)
     }
 
-    err = json.NewDecoder(pipResp.Body).Decode(system)
+    if pipResp.StatusCode != 200 {
+        return nil
+    }
+
+    err = json.NewDecoder(pipResp.Body).Decode(usr)
     if err != nil {
-        return fmt.Errorf("attributes: RequestSystemAttributes(): unable to decode the PIP response: %w", err)
+        return fmt.Errorf("attributes: RequestUserAttributes(): unable to decode the PIP response: %w", err)
     }
 
     return nil

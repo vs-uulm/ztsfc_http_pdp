@@ -20,12 +20,14 @@ type AttributesT struct {
 
 type UserT struct {
     PwAuthenticated    int `yaml:"pw_authenticated"`
+    UsualTime   int `yaml:"usual_time"`
+    UsualService    int `yaml:"usual_service"`
 }
 
 type DeviceT struct {
     CertAuthenticated   int `yaml:"cert_authenticated"`
     FromTrustedLocation int `yaml:"from_trusted_location"`
-    NotWithinAllowedRequestRatePenalty int `yaml:"not_within_allowed_request_rate_penalty"`
+    WithinAllowedRequestRate int `yaml:"within_allowed_request_rate"`
 }
 
 type SfT struct {
@@ -39,6 +41,11 @@ type ActionT struct {
 }
 
 type ResourceT struct {
+    TargetSensitivity int `yaml:"target_sensitivity"`
+    ProtocolSecurity int `yaml:"protocol_security"`
+    TargetState int `yaml:"target_state"`
+    TargetHealth int `yaml:"target_health"`
+    TargetVuln int `yaml:"target_vuln"`
     Actions map[string]*ActionT `yaml:"actions"`
     TrustedLocations   []string `yaml:"trusted_locations"`
     AllowedRequestsPerSecond rate.Limit `yaml:"allowed_requests_per_second"`

@@ -13,6 +13,7 @@ import (
     rattr "github.com/vs-uulm/ztsfc_http_attributes"
     //"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust_engine"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policy_engine"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
 )
 
@@ -39,64 +40,44 @@ sent to the service, sent to the DPI or be blocked.
 */
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthResponse, error) {
     var authResponse AuthResponse
-    var devAttributes *rattr.Device = nil
 
-    // Step 1: request user attributes
-    // TODO: implement 
-
-    // Step 2: request device attributes
-    if len(cpm.Device) == 0 {
-        sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses an unknown device from '%s' for their request",
-            cpm.User, cpm.Location)
-    } else {
-        devAttributes, _ = rattr.NewEmptyDevice()
-        err := attributes.RequestDeviceAttributes(sysLogger, cpm, devAttributes)
-        if err != nil {
-            return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting device attributes from PIP: %v", err)
-        }
-        if len(devAttributes.DeviceID) == 0 {
-            sysLogger.Infof("authorization: PerformAuthorization(): user '%s' uses a device PIP has no information about from '%s' for their request",
-                cpm.User, cpm.Location)
-        }
-    }
-
-    // Step 3: request system attributes
-    system := rattr.NewEmptySystem()
-    err := attributes.RequestSystemAttributes(sysLogger, system)
+    // Step 1: Attribute Retrieval
+    var user *rattr.User
+    var device *rattr.Device
+    var system *rattr.System
+    user, device, system, err := attributes.RetrieveAttributes(sysLogger, cpm)
     if err != nil {
-        return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error requesting system attributes from PIP: %v", err)
+        return authResponse, fmt.Errorf("authorization: PerformAuthorization(): %v", err)
     }
 
-    // Step Y: check policie rules
-    if devAttributes != nil && len(devAttributes.DeviceID) == 0 {
-        sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is not present in the device DB", cpm.Device)
-        authResponse.Allow = false
-        authResponse.Reason = "Your request was rejected since your device is not managed by the device DB"
-        return authResponse, nil
-    }
-    if devAttributes != nil && devAttributes.Revoked {
-        sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is revoked", devAttributes.DeviceID)
-        authResponse.Allow = false
-        authResponse.Reason = "Your request was rejected since your device is revoked"
+    // Step 2: Evaluate Attribute Based Expressions
+    peDecision, peFeedback := policy_engine.EvaluateAttributeBasedExpressions(sysLogger, device, system)
+    if !peDecision {
+        authResponse.Allow = peDecision
+        authResponse.Reason = peFeedback
         return authResponse, nil
     }
 
-    sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, devAttributes)
+    sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, device)
 
-    // Step B: calculate trust score
-    totalTrustScore := trust_engine.CalcTrustScore(sysLogger, cpm)
+    // Step 3: Evaluate Trust Threshold Based Expressions
+    trustThreshold := trust_engine.CalcTrustThresholdAdditive(sysLogger, cpm, system)
+
+    // Step 4: Evaluate Trust Score Based Expressions
+    totalTrustScore := trust_engine.CalcTrustScoreAdditive(sysLogger, cpm, user, device)
+
+    // Step 4b: Evaluate SL Trust Opinion; Just for Testing
+    trust_engine.CalcTrustScoreSL(sysLogger, cpm, user, device)
 
     sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
         cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
-
-    trustThreshold := trust_engine.CalcTrustThreshold(sysLogger, cpm, system)
 
     if totalTrustScore >= trustThreshold {
         authResponse.Allow = true
         authResponse.Sfc = nil
 
         // Step X: update device attributes
-        if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, devAttributes); err != nil {
+        if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, device); err != nil {
             return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error updating device attributes to PIP: %v", err)
         }
 
