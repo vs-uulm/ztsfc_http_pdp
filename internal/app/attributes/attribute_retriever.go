@@ -24,7 +24,7 @@ func RetrieveAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata) (*rattr.U
             return user, device, system, fmt.Errorf("attributes: RetrieveAttributes(): error requesting user attributes from PIP: %v", err)
         }
         if len(user.UserID) == 0 {
-            sysLogger.Infof("attributes: RetrieveAttributes(): user '%s' uses a device PIP has no information about from '%s' for their request",
+            sysLogger.Infof("attributes: RetrieveAttributes(): user '%s' from '%s' is not present in the user DBP.",
                 cpm.User, cpm.Location)
         }
     }

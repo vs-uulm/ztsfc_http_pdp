@@ -6,7 +6,13 @@ import (
 )
 
 // TODO: Policy Missing. Harcoded ATM
-func EvaluateAttributeBasedExpressions(sysLogger *logger.Logger, device *rattr.Device, system *rattr.System) (authDecision bool, feedback string) {
+func EvaluateScoreBasedPolicyRules(sysLogger *logger.Logger, user *rattr.User, device *rattr.Device, system *rattr.System) (authDecision bool, feedback string) {
+	if user != nil && len(user.UserID) == 0 {
+		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved user is not present in the user DB")
+		authDecision = false
+		feedback = "Your request was rejected since your user is not managed by the user DB"
+		return
+	}
 	if device != nil && len(device.DeviceID) == 0 {
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device is not present in the device DB")
 		authDecision = false

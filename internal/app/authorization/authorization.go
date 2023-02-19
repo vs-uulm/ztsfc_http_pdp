@@ -50,8 +50,8 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
         return authResponse, fmt.Errorf("authorization: PerformAuthorization(): %v", err)
     }
 
-    // Step 2: Evaluate Attribute Based Expressions
-    peDecision, peFeedback := policy_engine.EvaluateAttributeBasedExpressions(sysLogger, device, system)
+    // Step 2: Evaluate Score-Based Policy Rules
+    peDecision, peFeedback := policy_engine.EvaluateScoreBasedPolicyRules(sysLogger, user, device, system)
     if !peDecision {
         authResponse.Allow = peDecision
         authResponse.Reason = peFeedback
