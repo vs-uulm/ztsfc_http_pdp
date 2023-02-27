@@ -6,6 +6,7 @@ forwarded or blocked.
 */
 
 import (
+    "fmt"
     "time"
 
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
@@ -58,7 +59,7 @@ func calcUserTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *
         }
     }
 
-    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
+    sysLogger.Debugf("trust_engine: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated user score is %d",
         cpm.User, cpm.Resource, cpm.Action, trust)
 
     return trust
@@ -87,24 +88,31 @@ func calcDeviceTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata) (tru
 
     }
 
-    sysLogger.Debugf("authorization: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
+    sysLogger.Debugf("trust_engine: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
         cpm.User, cpm.Resource, cpm.Action, trust)
 
 	return trust
 }
 
-func CalcTrustThresholdAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, system *rattr.System) (threshold int) {
+func CalcTrustThresholdAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, system *rattr.System) (threshold int, err error) {
     threshold = 0
+    err = nil
 
-    // Add static values (will change later)
     threshold += policies.Policies.Resources[cpm.Resource].TargetSensitivity
     threshold += policies.Policies.Resources[cpm.Resource].ProtocolSecurity
     threshold += policies.Policies.Resources[cpm.Resource].TargetState
     threshold += policies.Policies.Resources[cpm.Resource].TargetHealth
     threshold += policies.Policies.Resources[cpm.Resource].TargetVuln
+
+    if _, ok := policies.Policies.Resources[cpm.Resource].Actions[cpm.Action]; !ok {
+        return 0, fmt.Errorf("trust_engine: CalcTrustThresholdAdditive(): for user=%s, resource=%s the action=%s is not defined in the policies",
+            cpm.User, cpm.Resource, cpm.Action)
+    }
     threshold += policies.Policies.Resources[cpm.Resource].Actions[cpm.Action].TrustThreshold
 
     // Dynamic attributes (will change later)
     threshold += (int(system.ThreatLevel) * 10)
-    return threshold
+    sysLogger.Debugf("trust_engine: CalcTrustThresholdAdditive(): for user=%s, resource=%s the action=%s the threat level was '%d'",
+    cpm.User, cpm.Resource, cpm.Action, system.ThreatLevel)
+    return threshold, nil
 }

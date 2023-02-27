@@ -12,6 +12,8 @@ import (
 // TODO: Better structure; rework whole function
 // All Policy Related Initialization Functions
 func initResourcesParams() error {
+    fields := ""
+
     if policies.Policies.Resources == nil {
         return errors.New("init: InitResourcesParams(): no resources defined")
     }
@@ -22,16 +24,38 @@ func initResourcesParams() error {
             return errors.New("init: InitResourcesParams(): resource '" + resName + "' is empty")
         }
 
+        if resource.TargetSensitivity < 0 {
+            fields += "target_sensitivity,"
+        }
+
+        if resource.ProtocolSecurity < 0 {
+            fields += "protocol_security,"
+        }
+
+        if resource.TargetState < 0 {
+            fields += "target_state,"
+        }
+
+        if resource.TargetHealth < 0 {
+            fields += "target_health,"
+        }
+
+        if resource.TargetVuln < 0 {
+            fields += "target_vuln,"
+        }
+
+        if fields != "" {
+            return fmt.Errorf("init: InitPdpParams(): in the section 'pdp' for resource '%s' the following required fields are missed: '%s'", resName, strings.TrimSuffix(fields, ","))
+        }
+
         if resource.Actions == nil {
             return errors.New("init: InitResourcesParams(): for resource '" + resName + "' no actions are defined")
         }
 
-        // TODO: Implement Threshold Attributes
-
         // Iterates over all defined actions for each resource
         for action, val := range resource.Actions {
             upperAction := strings.ToUpper(action)
-            if upperAction != "GET" && upperAction != "POST" {
+            if upperAction != "GET" && upperAction != "POST" && upperAction != "DELETE" {
                 return errors.New("init: InitResourcesParams(): action '" + action +
                     "' defined for resource '" + resName + "' is not valid")
             }

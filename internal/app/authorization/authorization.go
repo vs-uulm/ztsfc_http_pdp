@@ -11,7 +11,7 @@ import (
     md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
     logger "github.com/vs-uulm/ztsfc_http_logger"
     rattr "github.com/vs-uulm/ztsfc_http_attributes"
-    //"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
+    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/trust_engine"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policy_engine"
     "github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
@@ -41,6 +41,15 @@ sent to the service, sent to the DPI or be blocked.
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthResponse, error) {
     var authResponse AuthResponse
 
+    // Step 0: Preparation step. 
+    // Checks if there is a policy defined for the requested resource 
+    _, ok := policies.Policies.Resources[cpm.Resource]
+    if !ok {
+        authResponse = AuthResponse{Allow: false, Reason: "There is no policy defined for the requested resourc"}
+        //return authResponse, fmt.Errorf("authorization: PerformAuthorization(): There is no policy defined for the requested resource")
+        return authResponse, nil
+    }
+
     // Step 1: Attribute Retrieval
     var user *rattr.User
     var device *rattr.Device
@@ -61,18 +70,23 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     sysLogger.Debugf("authorization: calcUserTrust(): device attributes for '%s'=%v", cpm.Device, device)
 
     // Step 3: Evaluate Trust Threshold Based Expressions
-    trustThreshold := trust_engine.CalcTrustThresholdAdditive(sysLogger, cpm, system)
+    trustThreshold, err := trust_engine.CalcTrustThresholdAdditive(sysLogger, cpm, system)
+    if err != nil {
+        authResponse.Allow = false
+        authResponse.Reason = "For the requested resource the requested action is not defined."
+        return authResponse, err
+    }
 
     // Step 4: Evaluate Trust Score Based Expressions
     totalTrustScore := trust_engine.CalcTrustScoreAdditive(sysLogger, cpm, user, device)
 
     // Step 4b: Evaluate SL Trust Opinion; Just for Testing
-    trust_engine.CalcTrustScoreSL(sysLogger, cpm, user, device)
+    // trust_engine.CalcTrustScoreSL(sysLogger, cpm, user, device)
 
-    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d",
-        cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
+    sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d", cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
 
     if totalTrustScore >= trustThreshold {
+        sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been permitted since total trust score '%d' is greater than or requals calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
         authResponse.Allow = true
         authResponse.Sfc = nil
 
@@ -83,6 +97,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 
         return authResponse, nil
     } else {
+        sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been rejected since total trust score '%d' is lower than calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
         authResponse.Allow = false
         authResponse.Reason = "Your request was rejected since your total trust score is too low"
         return authResponse, nil
