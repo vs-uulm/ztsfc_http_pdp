@@ -34,7 +34,7 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
     if !exists {
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
             PenaltyTimestamp: time.Time{},
         }
     } else if len(user) >= maxDevicesPerUser {
@@ -43,12 +43,12 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
             break
         }
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
             PenaltyTimestamp: time.Time{},
         }
     } else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
         policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, 3),
+            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
             PenaltyTimestamp: time.Time{},
         }
     }

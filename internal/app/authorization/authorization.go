@@ -60,7 +60,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     }
 
     // Step 2: Evaluate Score-Based Policy Rules
-    peDecision, peFeedback := policy_engine.EvaluateScoreBasedPolicyRules(sysLogger, user, device, system)
+    peDecision, peFeedback := policy_engine.EvaluateCriteriaBasedPolicyRules(sysLogger, user, device, system)
     if !peDecision {
         authResponse.Allow = peDecision
         authResponse.Reason = peFeedback
