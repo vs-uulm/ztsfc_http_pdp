@@ -39,13 +39,13 @@ sent to the service, sent to the DPI or be blocked.
 @return allow: False, when the request should be blocked; True, when the request should be forwarded
 */
 func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthResponse, error) {
-    var authResponse AuthResponse
+    var authResponse AuthResponse = AuthResponse{Allow: false, Reason: "Dummy reason...", Sfc: nil}
 
     // Step 0: Preparation step. 
     // Checks if there is a policy defined for the requested resource 
     _, ok := policies.Policies.Resources[cpm.Resource]
     if !ok {
-        authResponse = AuthResponse{Allow: false, Reason: "There is no policy defined for the requested resourc"}
+        authResponse.Reason = "There is no policy defined for the requested resource"
         //return authResponse, fmt.Errorf("authorization: PerformAuthorization(): There is no policy defined for the requested resource")
         return authResponse, nil
     }
@@ -88,7 +88,6 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     if totalTrustScore >= trustThreshold {
         sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been permitted since total trust score '%d' is greater than or requals calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
         authResponse.Allow = true
-        authResponse.Sfc = nil
 
         // Step X: update device attributes
         if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, device); err != nil {
