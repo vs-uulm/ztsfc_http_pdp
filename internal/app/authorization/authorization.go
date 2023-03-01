@@ -88,6 +88,7 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
     if totalTrustScore >= trustThreshold {
         sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been permitted since total trust score '%d' is greater than or requals calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
         authResponse.Allow = true
+        authResponse.Reason = "trust score high enough without SFC"
 
         // Step X: update device attributes
         if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, device); err != nil {
