@@ -4,20 +4,20 @@ import (
 	"net/http"
 	"strconv"
 
-    logger "github.com/vs-uulm/ztsfc_http_logger"
+	logger "github.com/vs-uulm/ztsfc_http_logger"
 )
 
 // Control Plane Metadata
 type Cp_metadata struct {
 	User               string
-	PwAuthenticated   bool
-	CertAuthenticated bool
+	PwAuthenticated    bool
+	CertAuthenticated  bool
 	Resource           string
 	Action             string
 	Device             string
-	//RequestToday       int
-	//FailedToday        int
 	Location           string
+	ConnectionSecurity string
+	UserAgent          string
 }
 
 func (cpm *Cp_metadata) ExtractMetadata(sysLogger *logger.Logger, req *http.Request) {
@@ -32,7 +32,9 @@ func (cpm *Cp_metadata) ExtractMetadata(sysLogger *logger.Logger, req *http.Requ
 	//cpm.RequestToday, _ = strconv.Atoi(req.URL.Query().Get("requestToday"))
 	//cpm.FailedToday, _ = strconv.Atoi(req.URL.Query().Get("failedToday"))
 	cpm.Location = req.URL.Query().Get("location")
+	cpm.ConnectionSecurity = req.URL.Query().Get("connectionSecurity")
+	cpm.UserAgent = req.URL.Query().Get("userAgent")
 
-    sysLogger.Debugf("metadata: ExtractMetadata(): User=%s, PwAuthenticated=%t, Device=%s, CertAuthenticated=%t, Resource=%s, Action=%s" +
-        ", Location=%s", cpm.User, cpm.PwAuthenticated, cpm.Device, cpm.CertAuthenticated, cpm.Resource, cpm.Action, cpm.Location)
+	sysLogger.Debugf("metadata: ExtractMetadata(): User=%s, PwAuthenticated=%t, Device=%s, CertAuthenticated=%t, Resource=%s, Action=%s"+
+		", Location=%s, ConnectionSecurity=%s, UserAgent=%s", cpm.User, cpm.PwAuthenticated, cpm.Device, cpm.CertAuthenticated, cpm.Resource, cpm.Action, cpm.Location, cpm.ConnectionSecurity, cpm.UserAgent)
 }

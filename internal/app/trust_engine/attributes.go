@@ -6,69 +6,182 @@ forwarded or blocked.
 */
 
 import (
-    "net"
-    "time"
+	"net"
+	"time"
 
-    "golang.org/x/time/rate"
+	"golang.org/x/time/rate"
 
-    md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
-    "github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
+	ua "github.com/mileusna/useragent"
+	rattr "github.com/vs-uulm/ztsfc_http_attributes"
+	logger "github.com/vs-uulm/ztsfc_http_logger"
+	attr "github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
+	md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 )
 
 func deviceAccessFromTrustedLocation(cpm *md.Cp_metadata) bool {
-    for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
-        if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
-            return true
-        }
-    }
+	for _, trustedNetwork := range policies.Policies.Resources[cpm.Resource].TrustedIPNetworks {
+		if trustedNetwork.Contains(net.ParseIP(cpm.Location)) {
+			return true
+		}
+	}
 
-    return false
+	return false
 }
 
 // TODO: remove maxDevicesPerUser
 func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
-    maxDevicesPerUser := 5
+	maxDevicesPerUser := 5
 
-    // TODO: Check of "policies.Policies.Resources[cpm.Resource]" exists
-    user, exists := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User]
-    if !exists {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
-            PenaltyTimestamp: time.Time{},
-        }
-    } else if len(user) >= maxDevicesPerUser {
-        for device, _ := range user {
-            delete(user, device)
-            break
-        }
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
-            PenaltyTimestamp: time.Time{},
-        }
-    } else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
-            AccessLimit: rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
-            PenaltyTimestamp: time.Time{},
-        }
-    }
+	// TODO: Check of "policies.Policies.Resources[cpm.Resource]" exists
+	user, exists := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User]
+	if !exists {
+		policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User] = make(map[string]*policies.AccessLimiter)
+		policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+			AccessLimit:      rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
+			PenaltyTimestamp: time.Time{},
+		}
+	} else if len(user) >= maxDevicesPerUser {
+		for device, _ := range user {
+			delete(user, device)
+			break
+		}
+		policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+			AccessLimit:      rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
+			PenaltyTimestamp: time.Time{},
+		}
+	} else if policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] == nil {
+		policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device] = &policies.AccessLimiter{
+			AccessLimit:      rate.NewLimiter(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond, int(policies.Policies.Resources[cpm.Resource].AllowedRequestsPerSecond)),
+			PenaltyTimestamp: time.Time{},
+		}
+	}
 
-    within := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.IsZero()
-    if !within {
-        applyPenaltyDirectly := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.After(time.Now())
-        if applyPenaltyDirectly {
-            return false
-        } else {
-            policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Time{}
-        }
-    }
+	within := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.IsZero()
+	if !within {
+		applyPenaltyDirectly := policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp.After(time.Now())
+		if applyPenaltyDirectly {
+			return false
+		} else {
+			policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Time{}
+		}
+	}
 
-    within = policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].AccessLimit.Allow()
-    if !within {
-        policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Minute * 5)
-    }
+	within = policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].AccessLimit.Allow()
+	if !within {
+		policies.Policies.Resources[cpm.Resource].ResourceAccessLimits[cpm.User][cpm.Device].PenaltyTimestamp = time.Now().Add(time.Minute * 5)
+	}
 
-    return within
+	return within
+}
+
+func withinUsualAccessRate(sysLogger *logger.Logger, user *rattr.User) bool {
+	limiter, exists := attr.UserLimiter[user.UserID]
+	if !exists {
+		sysLogger.Infof("For user %s no usual access rate limiter could be found.", user.UserID)
+		return false
+	}
+	within := limiter.Allow()
+	if !within {
+		return false
+	}
+
+	return true
+}
+
+func isUsualServiceForUser(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) bool {
+	for _, service := range user.UsualServices {
+		if service == cpm.Resource {
+			return true
+		}
+	}
+	return false
+}
+
+func isUsualServiceForDevice(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
+	for _, service := range device.UsualServices {
+		if service == cpm.Resource {
+			return true
+		}
+	}
+	return false
+}
+
+func isUsualDevice(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) bool {
+	for _, device := range user.UsualDevices {
+		if device == cpm.Device {
+			return true
+		}
+	}
+	return false
+}
+
+func isUsualUser(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
+	for _, user := range device.UsualUser {
+		if user == cpm.User {
+			return true
+		}
+	}
+	return false
+}
+
+func upToDateSoftwarePatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+	agent := ua.Parse(cpm.UserAgent)
+
+	switch agent.Name {
+	case ua.Safari:
+		// sysLogger.Debugf("Software Patch Level For User %s: %d", cpm.User, agent.VersionNo.Major)
+		if agent.VersionNo.Major < 16 {
+			return false
+		}
+	case ua.Firefox:
+		if agent.VersionNo.Major < 113 {
+			return false
+		}
+	case ua.Chrome:
+		if agent.VersionNo.Major < 113 {
+			return false
+		}
+	case ua.Opera:
+		if agent.VersionNo.Major < 98 {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
+}
+
+func upToDateSystemPatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+	agent := ua.Parse(cpm.UserAgent)
+
+	switch agent.OS {
+	case ua.Windows:
+		if agent.OSVersionNo.Major < 22 {
+			return false
+		}
+	case ua.Android:
+		if agent.OSVersionNo.Major < 13 {
+			return false
+		}
+	case ua.MacOS:
+		if agent.OSVersionNo.Major < 10 || agent.OSVersionNo.Minor < 15 {
+			return false
+		}
+	case ua.IOS:
+		if agent.OSVersionNo.Major < 16 {
+			sysLogger.Debugf("Presented iOS Version is: %d", agent.OSVersionNo.Major)
+			return false
+		}
+	case ua.Linux:
+		if agent.OSVersionNo.Major < 22 {
+			sysLogger.Debugf("Presented Linux Version is: %d", agent.OSVersionNo.Major)
+			return false
+		}
+	default:
+		return false
+	}
+	return true
 }
 
 /*

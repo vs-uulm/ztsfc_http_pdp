@@ -1,3 +1,6 @@
+trust_algorithm:
+  variant: criteria
+
 attributes:
   user:
     pw_authenticated: 5
