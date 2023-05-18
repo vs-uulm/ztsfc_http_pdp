@@ -184,6 +184,17 @@ func upToDateSystemPatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) boo
 	return true
 }
 
+func correctFingerprint(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
+	agent := ua.Parse(cpm.UserAgent)
+	fingerprint := cpm.Device + "." + agent.OS + "." + agent.Name
+	sysLogger.Debugf("Device has fingerprint=%s", fingerprint)
+	if device.Fingerprint == fingerprint {
+		return true
+	} else {
+		return false
+	}
+}
+
 /*
 In this method is checked, if the user authenticated with a password or client-certificate and if the user is known to the PEP
 

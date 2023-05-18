@@ -56,7 +56,7 @@ func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.
 	}
 
 	// Checks Attribute "Access Time"
-	// TODO:
+	// TODO: Better time checking.
 	requestTime := time.Now().Hour()
 	if requestTime == 22 {
 		requestTime = 0
@@ -122,21 +122,28 @@ func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *m
 		cpm.ConnectionSecurity != tls.CipherSuiteName(tls.TLS_AES_256_GCM_SHA384) &&
 		cpm.ConnectionSecurity != tls.CipherSuiteName(tls.TLS_CHACHA20_POLY1305_SHA256) {
 		authDecision = false
-		feedback = fmt.Sprintf("User %s is using a insecure connection", cpm.User)
+		feedback = fmt.Sprintf("Device %s is using a insecure connection", cpm.Device)
 		return
 	}
 
 	// Check Attribute "Software Patch Level"
 	if !upToDateSoftwarePatchLevel(sysLogger, cpm) {
 		authDecision = false
-		feedback = fmt.Sprintf("User %s is using outdated or unsupported software for making this request", cpm.User)
+		feedback = fmt.Sprintf("Device %s is using outdated or unsupported software for making this request", cpm.Device)
 		return
 	}
 
 	// Check Attribute "Software Patch Level"
 	if !upToDateSystemPatchLevel(sysLogger, cpm) {
 		authDecision = false
-		feedback = fmt.Sprintf("User %s is using outdated or unsupported system software for making this request", cpm.User)
+		feedback = fmt.Sprintf("Device %s is using outdated or unsupported system software for making this request", cpm.Device)
+		return
+	}
+
+	// Check Attribute "Fingerprint"
+	if !correctFingerprint(sysLogger, cpm, device) {
+		authDecision = false
+		feedback = fmt.Sprintf("Device %s shows an unusual fingerprint", cpm.Device)
 		return
 	}
 

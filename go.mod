@@ -6,7 +6,7 @@ require (
 	github.com/leobrada/golang_convenience_tools v0.0.0-20230226145447-cbd5896c5ecf
 	github.com/leobrada/yaml_tools v0.0.0-20220115205103-7f6e1de7ab2e
 	github.com/mileusna/useragent v1.3.2
-	github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20230518082521-96fabad26cf6
+	github.com/vs-uulm/ztsfc_http_attributes v0.0.0-20230518103524-676af059d2f9
 	github.com/vs-uulm/ztsfc_http_logger v0.0.0-20220504121928-852f30c337e5
 	golang.org/x/time v0.3.0
 )
