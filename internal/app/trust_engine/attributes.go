@@ -157,7 +157,8 @@ func upToDateSystemPatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) boo
 
 	switch agent.OS {
 	case ua.Windows:
-		if agent.OSVersionNo.Major < 22 {
+		sysLogger.Debugf("Presented Window Version is:  %d", agent.OSVersionNo.Major)
+		if agent.OSVersionNo.Major < 10 {
 			return false
 		}
 	case ua.Android:
@@ -174,7 +175,7 @@ func upToDateSystemPatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) boo
 			return false
 		}
 	case ua.Linux:
-		if agent.OSVersionNo.Major < 22 {
+		if agent.OSVersionNo.Major != 0 {
 			sysLogger.Debugf("Presented Linux Version is: %d", agent.OSVersionNo.Major)
 			return false
 		}

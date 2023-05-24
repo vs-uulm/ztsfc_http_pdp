@@ -1,13 +1,15 @@
 package policy_engine
 
 import (
+	rattr "github.com/vs-uulm/ztsfc_http_attributes"
+	logger "github.com/vs-uulm/ztsfc_http_logger"
 	md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
-    logger "github.com/vs-uulm/ztsfc_http_logger"
-    rattr "github.com/vs-uulm/ztsfc_http_attributes"
 )
 
 // TODO: Policy Missing. Harcoded ATM
-func EvaluateCriteriaBasedPolicyRules(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User, device *rattr.Device, system *rattr.System) (authDecision bool, feedback string) {
+func EvaluateACLRules(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User, device *rattr.Device, system *rattr.System) (authDecision bool, feedback string) {
+
+	// Checks if the user is present in the User DB
 	if user != nil && len(user.UserID) == 0 {
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved user is not present in the user DB")
 		authDecision = false
@@ -15,6 +17,10 @@ func EvaluateCriteriaBasedPolicyRules(sysLogger *logger.Logger, cpm *md.Cp_metad
 		return
 	}
 
+	// Checks if the user has too many failed password login attempts already (failed attempts > 3)
+	// This is done by the PEP
+
+	// Checks if the device is present in the Device DB
 	if device != nil && len(device.DeviceID) == 0 {
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device is not present in the device DB")
 		authDecision = false
@@ -22,6 +28,7 @@ func EvaluateCriteriaBasedPolicyRules(sysLogger *logger.Logger, cpm *md.Cp_metad
 		return
 	}
 
+	// Checks if the device is revoked
 	if device != nil && device.Revoked {
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since the involved device '%s' is revoked", device.DeviceID)
 		authDecision = false
@@ -29,6 +36,7 @@ func EvaluateCriteriaBasedPolicyRules(sysLogger *logger.Logger, cpm *md.Cp_metad
 		return
 	}
 
+	// Checks if the current client's request rate is withing the allowed range for the requested service
 	allowedToAccessService := false
 	for _, service := range user.AllowedServices {
 		if cpm.Resource == service {
@@ -44,7 +52,7 @@ func EvaluateCriteriaBasedPolicyRules(sysLogger *logger.Logger, cpm *md.Cp_metad
 		return
 	}
 
-    authDecision = true
-    feedback = ""
-    return
+	authDecision = true
+	feedback = ""
+	return
 }
