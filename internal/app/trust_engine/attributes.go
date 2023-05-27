@@ -6,6 +6,7 @@ forwarded or blocked.
 */
 
 import (
+	"crypto/tls"
 	"net"
 	"time"
 
@@ -75,6 +76,24 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
 	return within
 }
 
+func isUsualAccessTime(sysLogger *logger.Logger, user *rattr.User) bool {
+	// TODO: Better time checking.
+	requestTime := time.Now().Hour()
+	if requestTime == 22 {
+		requestTime = 0
+	} else if requestTime == 23 {
+		requestTime = 1
+	} else {
+		requestTime = requestTime + 2
+	}
+
+	if !(requestTime >= user.UsualTimeBegin && requestTime <= user.UsualTimeEnd) {
+		return false
+	} else {
+		return true
+	}
+}
+
 func withinUsualAccessRate(sysLogger *logger.Logger, user *rattr.User) bool {
 	limiter, exists := attr.UserLimiter[user.UserID]
 	if !exists {
@@ -87,6 +106,16 @@ func withinUsualAccessRate(sysLogger *logger.Logger, user *rattr.User) bool {
 	}
 
 	return true
+}
+
+func isSecureConnection(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+	if cpm.ConnectionSecurity == tls.CipherSuiteName(tls.TLS_AES_128_GCM_SHA256) ||
+		cpm.ConnectionSecurity == tls.CipherSuiteName(tls.TLS_AES_256_GCM_SHA384) ||
+		cpm.ConnectionSecurity == tls.CipherSuiteName(tls.TLS_CHACHA20_POLY1305_SHA256) {
+		return true
+	} else {
+		return false
+	}
 }
 
 func isUsualServiceForUser(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) bool {

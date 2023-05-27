@@ -7,10 +7,12 @@ forwarded or blocked.
 
 import (
 	"fmt"
+	"net/http"
 
 	rattr "github.com/vs-uulm/ztsfc_http_attributes"
 	logger "github.com/vs-uulm/ztsfc_http_logger"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/attributes"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 	md "github.com/vs-uulm/ztsfc_http_pdp/internal/app/metadata"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policy_engine"
@@ -62,6 +64,9 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 	// Step 2: Evaluate ACL rules
 	peDecision, peFeedback := policy_engine.EvaluateACLRules(sysLogger, cpm, user, device, system)
 	if !peDecision {
+		if err := pushAuthFail(sysLogger, user.UserID); err != nil {
+			sysLogger.Errorf("%v", err)
+		}
 		authResponse.Allow = peDecision
 		authResponse.Reason = peFeedback
 		return authResponse, nil
@@ -71,6 +76,27 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 	switch policies.Policies.TrustAlgorithm.Variant {
 	case "criteria_based_binary":
 		authResponse.Allow, authResponse.Reason = trust_engine.PerformCriteriaBasedBinary(sysLogger, cpm, user, device, system)
+		if !authResponse.Allow {
+			if err := pushAuthFail(sysLogger, user.UserID); err != nil {
+				sysLogger.Errorf("%v", err)
+			}
+		} else {
+			if err := pushAuthSuccess(sysLogger, user.UserID); err != nil {
+				sysLogger.Errorf("%v", err)
+			}
+		}
+		return authResponse, nil
+	case "score_based_additive":
+		authResponse.Allow, authResponse.Reason = trust_engine.PerformScoreBasedAdditive(sysLogger, cpm, user, device, system)
+		if !authResponse.Allow {
+			if err := pushAuthFail(sysLogger, user.UserID); err != nil {
+				sysLogger.Errorf("%v", err)
+			}
+		} else {
+			if err := pushAuthSuccess(sysLogger, user.UserID); err != nil {
+				sysLogger.Errorf("%v", err)
+			}
+		}
 		return authResponse, nil
 	default:
 		// Deprecated!
@@ -114,4 +140,50 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 			*/
 		}
 	}
+}
+
+func pushAuthFail(sysLogger *logger.Logger, username string) error {
+	pushReq, err := http.NewRequest("POST", config.Config.Pip.TargetAddr+config.Config.Pip.PushUserAttributesUpdateEndpoint, nil)
+	if err != nil {
+		return fmt.Errorf("attributes: pushAuthFail(): unable to create push user update attribute request for PIP: %w", err)
+	}
+
+	pushReqQuery := pushReq.URL.Query()
+	pushReqQuery.Set("user", username)
+	pushReqQuery.Set("failed-auth-attempt", "1")
+	pushReq.URL.RawQuery = pushReqQuery.Encode()
+
+	pipResp, err := config.Config.Pip.PipClient.Do(pushReq)
+	if err != nil {
+		return fmt.Errorf("attributes: pushAuthFail(): unable to send push user attribute request to PIP: %w", err)
+	}
+
+	if pipResp.StatusCode != 200 {
+		return nil
+	}
+
+	return nil
+}
+
+func pushAuthSuccess(sysLogger *logger.Logger, username string) error {
+	pushReq, err := http.NewRequest("POST", config.Config.Pip.TargetAddr+config.Config.Pip.PushUserAttributesUpdateEndpoint, nil)
+	if err != nil {
+		return fmt.Errorf("attributes: pushAuthSuccess(): unable to create push user update attribute request for PIP: %w", err)
+	}
+
+	pushReqQuery := pushReq.URL.Query()
+	pushReqQuery.Set("user", username)
+	pushReqQuery.Set("success-auth-attempt", "1")
+	pushReq.URL.RawQuery = pushReqQuery.Encode()
+
+	pipResp, err := config.Config.Pip.PipClient.Do(pushReq)
+	if err != nil {
+		return fmt.Errorf("attributes: pushAuthSuccess(): unable to send push user attribute request to PIP: %w", err)
+	}
+
+	if pipResp.StatusCode != 200 {
+		return nil
+	}
+
+	return nil
 }

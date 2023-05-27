@@ -1,9 +1,7 @@
 package trust_engine
 
 import (
-	"crypto/tls"
 	"fmt"
-	"time"
 
 	rattr "github.com/vs-uulm/ztsfc_http_attributes"
 	logger "github.com/vs-uulm/ztsfc_http_logger"
@@ -20,6 +18,11 @@ func PerformCriteriaBasedBinary(sysLogger *logger.Logger, cpm *md.Cp_metadata, u
 		return
 	}
 
+	authDecision, feedback = performCriteriaBasedBinaryCCAttributes(sysLogger, cpm)
+	if !authDecision {
+		return
+	}
+
 	authDecision = true
 	feedback = "sussesfull"
 	return
@@ -27,52 +30,42 @@ func PerformCriteriaBasedBinary(sysLogger *logger.Logger, cpm *md.Cp_metadata, u
 
 func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) (authDecision bool, feedback string) {
 
-	// Checks Attribute "Password Authentication"
+	// Checks User Attribute "Password Authentication"
 	if !cpm.PwAuthenticated {
 		authDecision = false
 		feedback = fmt.Sprintf("User %s is not password authenticated", cpm.User)
 		return
 	}
 
-	// Checks Attribute "Enterprise Presence"
+	// Checks User Attribute "Enterprise Presence"
 	if !user.EnterprisePresence {
 		authDecision = false
 		feedback = fmt.Sprintf("User %s should not be present right now", cpm.User)
 		return
 	}
 
-	// Checks Attribute "Service Usage"
+	// Checks User Attribute "Service Usage"
 	if !isUsualServiceForUser(sysLogger, cpm, user) {
 		authDecision = false
 		feedback = fmt.Sprintf("User %s tries to access an unusual service", cpm.User)
 		return
 	}
 
-	// Checks Attribute "Device Usage"
+	// Checks User Attribute "Device Usage"
 	if !isUsualDevice(sysLogger, cpm, user) {
 		authDecision = false
 		feedback = fmt.Sprintf("User %s tries to access using an unusual device", cpm.User)
 		return
 	}
 
-	// Checks Attribute "Access Time"
-	// TODO: Better time checking.
-	requestTime := time.Now().Hour()
-	if requestTime == 22 {
-		requestTime = 0
-	} else if requestTime == 23 {
-		requestTime = 1
-	} else {
-		requestTime = requestTime + 2
-	}
-	sysLogger.Debugf("Access Time For User %s: %d", user.UserID, requestTime)
-	if !(requestTime >= user.UsualTimeBegin && requestTime <= user.UsualTimeEnd) {
+	// Checks User Attribute "Access Time"
+	if !isUsualAccessTime(sysLogger, user) {
 		authDecision = false
-		feedback = fmt.Sprintf("User %s requests access outside of their usual access time", cpm.User)
+		feedback = fmt.Sprintf("User %s tries to access at an unusual time", cpm.User)
 		return
 	}
 
-	// Checks Attribute "Access Rate"
+	// Checks User Attribute "Access Rate"
 	if !withinUsualAccessRate(sysLogger, user) {
 		authDecision = false
 		feedback = fmt.Sprintf("User %s requests access outside of their usual access rate", cpm.User)
@@ -89,61 +82,73 @@ func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.
 
 func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) (authDecision bool, feedback string) {
 
-	// Checks Attribute "Password Authentication"
+	// Checks Device Attribute "Certificate Authentication"
 	if !cpm.CertAuthenticated {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s is not certificate authenticated", cpm.Device)
 		return
 	}
 
-	// Checks Attribute "Enterprise Presence"
+	// Checks Device Attribute "Enterprise Presence"
 	if !device.EnterprisePresence {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s should not be present right now", cpm.Device)
 		return
 	}
 
-	// Checks Attribute "Service Usage"
+	// Checks Device Attribute "Service Usage"
 	if !isUsualServiceForDevice(sysLogger, cpm, device) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s tries to access an unusual service", cpm.Device)
 		return
 	}
 
-	// Checks Attribute "User Usage"
+	// Checks Device Attribute "User Usage"
 	if !isUsualUser(sysLogger, cpm, device) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s is used by an unusual user", cpm.Device)
 		return
 	}
 
-	// Check Attribute "Connection Security"
-	if cpm.ConnectionSecurity != tls.CipherSuiteName(tls.TLS_AES_128_GCM_SHA256) &&
-		cpm.ConnectionSecurity != tls.CipherSuiteName(tls.TLS_AES_256_GCM_SHA384) &&
-		cpm.ConnectionSecurity != tls.CipherSuiteName(tls.TLS_CHACHA20_POLY1305_SHA256) {
+	// Check Device Attribute "Connection Security"
+	if !isSecureConnection(sysLogger, cpm) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s is using a insecure connection", cpm.Device)
 		return
 	}
 
-	// Check Attribute "Software Patch Level"
+	// Check Device Attribute "Software Patch Level"
 	if !upToDateSoftwarePatchLevel(sysLogger, cpm) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s is using outdated or unsupported software for making this request", cpm.Device)
 		return
 	}
 
-	// Check Attribute "Software Patch Level"
+	// Check Device Attribute "Software Patch Level"
 	if !upToDateSystemPatchLevel(sysLogger, cpm) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s is using outdated or unsupported system software for making this request", cpm.Device)
 		return
 	}
 
-	// Check Attribute "Fingerprint"
+	// Check Device Attribute "Fingerprint"
 	if !correctFingerprint(sysLogger, cpm, device) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s shows an unusual fingerprint", cpm.Device)
+		return
+	}
+
+	authDecision = true
+	feedback = "sussesfull"
+	return
+}
+
+func performCriteriaBasedBinaryCCAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata) (authDecision bool, feedback string) {
+
+	// Check CC Attributes "Authenticated, Integrity Protected and Confidential"
+	if !isSecureConnection(sysLogger, cpm) {
+		authDecision = false
+		feedback = fmt.Sprintf("Communication channel is not sufficiently authenticated, integrity protected or confidential")
 		return
 	}
 

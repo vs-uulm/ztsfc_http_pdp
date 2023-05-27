@@ -33,11 +33,12 @@ type PdpT struct {
 }
 
 type PipT struct {
-	TargetAddr           string `yaml:"target_addr"`
-	DeviceEndpoint       string `yaml:"device_endpoint"`
-	UpdateDeviceEndpoint string `yaml:"update_device_endpoint"`
-	UserEndpoint         string `yaml:"user_endpoint"`
-	SystemEndpoint       string `yaml:"system_endpoint"`
+	TargetAddr                       string `yaml:"target_addr"`
+	DeviceEndpoint                   string `yaml:"device_endpoint"`
+	UpdateDeviceEndpoint             string `yaml:"update_device_endpoint"`
+	UserEndpoint                     string `yaml:"user_endpoint"`
+	SystemEndpoint                   string `yaml:"system_endpoint"`
+	PushUserAttributesUpdateEndpoint string `yaml:"push_user_attribute_update_endpoint"`
 
 	CertsPdpAcceptsWhenShownByPip []string `yaml:"certs_pdp_accepts_when_shown_by_pip"`
 	CertShownByPdpToPip           string   `yaml:"cert_shown_by_pdp_to_pip"`
