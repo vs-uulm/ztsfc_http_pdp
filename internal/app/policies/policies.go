@@ -45,15 +45,17 @@ type ActionT struct {
 }
 
 type ResourceT struct {
-	TargetSensitivity        int                 `yaml:"target_sensitivity"`
-	ProtocolSecurity         int                 `yaml:"protocol_security"`
-	TargetState              int                 `yaml:"target_state"`
-	TargetHealth             int                 `yaml:"target_health"`
-	TargetVuln               int                 `yaml:"target_vuln"`
-	Actions                  map[string]*ActionT `yaml:"actions"`
-	TrustedLocations         []string            `yaml:"trusted_locations"`
-	AllowedRequestsPerSecond rate.Limit          `yaml:"allowed_requests_per_second"`
-	AllowedDevicesPerUser    int                 `yaml:"allowed_devices_per_user"`
+	TargetSensitivity                  int                 `yaml:"target_sensitivity"`
+	ProtocolSecurity                   int                 `yaml:"protocol_security"`
+	TargetState                        int                 `yaml:"target_state"`
+	TargetHealth                       int                 `yaml:"target_health"`
+	TargetVuln                         int                 `yaml:"target_vuln"`
+	Actions                            map[string]*ActionT `yaml:"actions"`
+	TrustedLocations                   []string            `yaml:"trusted_locations"`
+	AllowedUserAuthenticationMethods   []string            `yaml:"allowed_user_authentication_methods"`
+	AllowedDeviceAuthenticationMethods []string            `yaml:"allowed_device_authentication_methods"`
+	AllowedRequestsPerSecond           rate.Limit          `yaml:"allowed_requests_per_second"`
+	AllowedDevicesPerUser              int                 `yaml:"allowed_devices_per_user"`
 
 	TrustedIPNetworks    []*net.IPNet
 	ResourceAccessLimits map[string]map[string]*AccessLimiter

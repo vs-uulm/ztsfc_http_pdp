@@ -76,6 +76,30 @@ func withinAllowedRequestRate(cpm *md.Cp_metadata) bool {
 	return within
 }
 
+func allowedUserAuthentationMethod(sysLogger *logger.Logger, cpm *md.Cp_metadata) bool {
+	for _, authentication_method := range policies.Policies.Resources[cpm.Resource].AllowedUserAuthenticationMethods {
+		if authentication_method == "password" && cpm.PwAuthenticated {
+			return true
+		}
+		if authentication_method == "passkey" && cpm.PasskeyAuthenticaed {
+			return true
+		}
+	}
+	return false
+}
+
+func allowedDeviceAuthentationMethod(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
+	for _, authentication_method := range policies.Policies.Resources[cpm.Resource].AllowedDeviceAuthenticationMethods {
+		if authentication_method == "cert" && cpm.CertAuthenticated {
+			return true
+		}
+		if authentication_method == "tpm_cert" && cpm.CertAuthenticated && device.ManagedDevice {
+			return true
+		}
+	}
+	return false
+}
+
 func isUsualAccessTime(sysLogger *logger.Logger, user *rattr.User) bool {
 	// TODO: Better time checking.
 	requestTime := time.Now().Hour()
@@ -145,6 +169,28 @@ func isUsualDevice(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.Us
 	return false
 }
 
+func isCorrectType(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
+	agent := ua.Parse(cpm.UserAgent)
+
+	if agent.Mobile && device.Type == "mobile" {
+		sysLogger.Debugf("Is a mobile device")
+		return true
+	} else if agent.Tablet && device.Type == "tablet" {
+		sysLogger.Debugf("Is a tablet device")
+		return true
+	} else if agent.Desktop && device.Type == "desktop" {
+		sysLogger.Debugf("Is a desktop device")
+		return true
+	} else if agent.Bot && device.Type == "bot" {
+		sysLogger.Debugf("Is a bot device")
+		return true
+	} else {
+		sysLogger.Debugf("Is not recognized device")
+		return false
+	}
+
+}
+
 func isUsualUser(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) bool {
 	for _, user := range device.UsualUser {
 		if user == cpm.User {
@@ -173,6 +219,10 @@ func upToDateSoftwarePatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) b
 		}
 	case ua.Opera:
 		if agent.VersionNo.Major < 98 {
+			return false
+		}
+	case ua.Edge:
+		if agent.VersionNo.Major < 113 {
 			return false
 		}
 	default:

@@ -18,9 +18,10 @@ func PerformScoreBasedAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, us
 	userTrust := calcUserTrustAdditive(sysLogger, cpm, user)
 	deviceTrust := calcDeviceTrustAdditive(sysLogger, cpm, device)
 	ccTrust := calcCCTrustAdditive(sysLogger, cpm)
-	// TODO: CCTrust
 
-	if (userTrust + deviceTrust + ccTrust) >= 5 {
+	riskScore := calcRiskScoreAdditive(sysLogger, cpm)
+
+	if (userTrust + deviceTrust + ccTrust) >= riskScore {
 		authDecision = true
 		feedback = "sussesfull"
 		return
@@ -29,26 +30,6 @@ func PerformScoreBasedAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, us
 		feedback = fmt.Sprintf("Trust score of user %s is too low", cpm.User)
 		return
 	}
-}
-
-/*
-DEPRECATED
-
-In this function the totalTrustScore is calculated; it comprises of user and device trust score
-
-@param sysLogger: used to print debug messages
-@param cpm: holds all user and device metadata
-
-@return trust: calculated total trust score
-*/
-func CalcTrustScoreAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User, device *rattr.Device) int {
-	userTrust := calcUserTrustAdditive(sysLogger, cpm, user)
-
-	deviceTrust := calcDeviceTrustAdditive(sysLogger, cpm, device)
-
-	totalTrustScore := userTrust + deviceTrust
-
-	return totalTrustScore
 }
 
 func calcUserTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) (userTrustScore int) {
@@ -136,6 +117,11 @@ func calcDeviceTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata, devi
 		deviceTrustScore++
 	}
 
+	// Evaluate Device Attribute "Type"
+	if !isCorrectType(sysLogger, cpm, device) {
+		deviceTrustScore++
+	}
+
 	sysLogger.Debugf("trust_engine: calcDeviceTrust(): for user=%s, resource=%s and action=%s the calculated device score is %d",
 		cpm.User, cpm.Resource, cpm.Action, deviceTrustScore)
 
@@ -159,6 +145,14 @@ func calcCCTrustAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata) (ccTrust
 	if isSecureConnection(sysLogger, cpm) {
 		ccTrustScore++
 	}
+
+	return
+}
+
+func calcRiskScoreAdditive(sysLogger *logger.Logger, cpm *md.Cp_metadata) (riskScore int) {
+	riskScore = 0
+
+	riskScore += riskOfRequestProtocol(sysLogger, cpm)
 
 	return
 }

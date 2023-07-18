@@ -99,46 +99,51 @@ func PerformAuthorization(sysLogger *logger.Logger, cpm *md.Cp_metadata) (AuthRe
 		}
 		return authResponse, nil
 	default:
+		authResponse.Allow = false
+		authResponse.Reason = "No TA defined."
+		return authResponse, err
 		// Deprecated!
 		// Step 3: Evaluate Trust Threshold Based Expressions
-		trustThreshold, err := trust_engine.CalcTrustThresholdAdditive(sysLogger, cpm, system)
-		if err != nil {
-			authResponse.Allow = false
-			authResponse.Reason = "For the requested resource the requested action is not defined."
-			return authResponse, err
-		}
-
+		/*
+			trustThreshold, err := trust_engine.CalcTrustThresholdAdditive(sysLogger, cpm, system)
+			if err != nil {
+				authResponse.Allow = false
+				authResponse.Reason = "For the requested resource the requested action is not defined."
+				return authResponse, err
+			}
+		*/
 		// Step 4: Evaluate Trust Score Based Expressions
-		totalTrustScore := trust_engine.CalcTrustScoreAdditive(sysLogger, cpm, user, device)
+		//totalTrustScore := trust_engine.CalcTrustScoreAdditive(sysLogger, cpm, user, device)
 
 		// Step 4b: Evaluate SL Trust Opinion; Just for Testing
 		// trust_engine.CalcTrustScoreSL(sysLogger, cpm, user, device)
 
-		sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d", cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
+		//sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the calculated total trust score is %d", cpm.User, cpm.Resource, cpm.Action, totalTrustScore)
+		/*
+			if totalTrustScore >= trustThreshold {
+				sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been permitted since total trust score '%d' is greater than or requals calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
+				authResponse.Allow = true
+				authResponse.Reason = "trust score high enough without SFC"
+		*/
+		// Step X: update device attributes
+		/*
+				if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, device); err != nil {
+					return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error updating device attributes to PIP: %v", err)
+				}
 
-		if totalTrustScore >= trustThreshold {
-			sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been permitted since total trust score '%d' is greater than or requals calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
-			authResponse.Allow = true
-			authResponse.Reason = "trust score high enough without SFC"
-
-			// Step X: update device attributes
-			if err := attributes.UpdateDeviceAttributes(sysLogger, cpm, device); err != nil {
-				return authResponse, fmt.Errorf("authorization: PerformAuthorization(): error updating device attributes to PIP: %v", err)
-			}
-
-			return authResponse, nil
-		} else {
-			sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been rejected since total trust score '%d' is lower than calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
-			authResponse.Allow = false
-			authResponse.Reason = "Your request was rejected since your total trust score is too low"
-			return authResponse, nil
-
-			/* Example for adding SFs to the SFC
-			   authResponse.Allow = true
-			   authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "logger", Md: "basic"}, Sf{Name: "ips", Md: "basic"})
-			   return authResponse
-			*/
-		}
+				return authResponse, nil
+			} else {
+				sysLogger.Debugf("authorization: calcUserTrust(): for user=%s, resource=%s and action=%s the request has been rejected since total trust score '%d' is lower than calculated threshold '%d'", cpm.User, cpm.Resource, cpm.Action, totalTrustScore, trustThreshold)
+				authResponse.Allow = false
+				authResponse.Reason = "Your request was rejected since your total trust score is too low"
+				return authResponse, nil
+		*/
+		/* Example for adding SFs to the SFC
+		   authResponse.Allow = true
+		   authResponse.Sfc = append(authResponse.Sfc, Sf{Name: "logger", Md: "basic"}, Sf{Name: "ips", Md: "basic"})
+		   return authResponse
+		*/
+		//}
 	}
 }
 

@@ -6,12 +6,14 @@ import (
 	"log"
 	"net/http"
 
+	racksec_syslog "github.com/RackSec/srslog" // Will be deleted after project demo
+	yaml "github.com/leobrada/yaml_tools"
+	logrus_syslog "github.com/shinji62/logrus-syslog-ng" // will be deleted after project demo
 	logger "github.com/vs-uulm/ztsfc_http_logger"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 	ini "github.com/vs-uulm/ztsfc_http_pdp/internal/app/init"
-	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/policies"
-    yaml "github.com/leobrada/yaml_tools"
+	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/router"
 )
 
 var (
@@ -26,19 +28,19 @@ func init() {
 	flag.StringVar(&policiesFilePath, "p", "./policies/policies.yml", "Path to user defined yaml policy file")
 	flag.Parse()
 
-    // Loading the general config file
+	// Loading the general config file
 	err := yaml.LoadYamlFile(confFilePath, &config.Config)
 	if err != nil {
 		log.Fatalf("main: init(): could not load yaml file: %v", err)
 	}
 
-    // Loading the policy file
-    err = yaml.LoadYamlFile(policiesFilePath, &policies.Policies)
+	// Loading the policy file
+	err = yaml.LoadYamlFile(policiesFilePath, &policies.Policies)
 	if err != nil {
 		log.Fatalf("main: init(): could not load yaml file: %v", err)
 	}
 
-    // Creating the Logger
+	// Creating the Logger
 	ini.InitSysLoggerParams()
 	sysLogger, err = logger.New(config.Config.SysLogger.LogFilePath,
 		config.Config.SysLogger.LogLevel,
@@ -50,7 +52,7 @@ func init() {
 		log.Fatalf("main: init(): could not initialize logger: %v", err)
 	}
 
-    // Create empty CertPool that is needed for certificates the PDP accepts when from by the PEP
+	// Create empty CertPool that is needed for certificates the PDP accepts when from by the PEP
 	config.Config.Pdp.CaCertPoolPdpAcceptsFromPep = x509.NewCertPool()
 
 	if err = ini.InitConfig(); err != nil {
@@ -59,6 +61,15 @@ func init() {
 
 	if err = ini.InitPolicies(); err != nil {
 		sysLogger.Fatalf("main: init(): could not initialize resource params: %v", err)
+	}
+
+	// GRAYLOG HOOK WILL BE DELTED AFTER PROJECT DEMO
+	hook, err := logrus_syslog.NewSyslogHookTls("bwnet-srv3-1g.informatik.uni-ulm.de:1515", racksec_syslog.LOG_DEBUG, "tag", "./certs/graylog.pem", false)
+
+	if err == nil {
+		sysLogger.AddHook(hook)
+	} else {
+		sysLogger.Infof("Error occured: %v", err)
 	}
 
 	sysLogger.Info("main: init(): initialization process successfully completed")

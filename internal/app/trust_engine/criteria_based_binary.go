@@ -31,9 +31,9 @@ func PerformCriteriaBasedBinary(sysLogger *logger.Logger, cpm *md.Cp_metadata, u
 func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr.User) (authDecision bool, feedback string) {
 
 	// Checks User Attribute "Password Authentication"
-	if !cpm.PwAuthenticated {
+	if !allowedUserAuthentationMethod(sysLogger, cpm) {
 		authDecision = false
-		feedback = fmt.Sprintf("User %s is not password authenticated", cpm.User)
+		feedback = fmt.Sprintf("User %s is not correctly authenticated for the requested service", cpm.User)
 		return
 	}
 
@@ -83,11 +83,18 @@ func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.
 func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata, device *rattr.Device) (authDecision bool, feedback string) {
 
 	// Checks Device Attribute "Certificate Authentication"
-	if !cpm.CertAuthenticated {
+	if !allowedDeviceAuthentationMethod(sysLogger, cpm, device) {
 		authDecision = false
-		feedback = fmt.Sprintf("Device %s is not certificate authenticated", cpm.Device)
+		feedback = fmt.Sprintf("Device %s is not correctly authenticated for the requested service", cpm.Device)
 		return
 	}
+
+	// Checks Device Attribute "Certificate Authentication"
+	//if !cpm.CertAuthenticated {
+	//	authDecision = false
+	//	feedback = fmt.Sprintf("Device %s is not certificate authenticated", cpm.Device)
+	//	return
+	//}
 
 	// Checks Device Attribute "Enterprise Presence"
 	if !device.EnterprisePresence {
@@ -135,6 +142,13 @@ func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *m
 	if !correctFingerprint(sysLogger, cpm, device) {
 		authDecision = false
 		feedback = fmt.Sprintf("Device %s shows an unusual fingerprint", cpm.Device)
+		return
+	}
+
+	// Check Device Attribute "Type"
+	if !isCorrectType(sysLogger, cpm, device) {
+		authDecision = false
+		feedback = fmt.Sprintf("Device %s shows an unusual type", cpm.Device)
 		return
 	}
 
