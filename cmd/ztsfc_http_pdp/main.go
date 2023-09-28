@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	racksec_syslog "github.com/RackSec/srslog" // Will be deleted after project demo
+	//racksec_syslog "github.com/RackSec/srslog" // Will be deleted after project demo
 	yaml "github.com/leobrada/yaml_tools"
-	logrus_syslog "github.com/shinji62/logrus-syslog-ng" // will be deleted after project demo
+	//logrus_syslog "github.com/shinji62/logrus-syslog-ng" // will be deleted after project demo
 	logger "github.com/vs-uulm/ztsfc_http_logger"
 	"github.com/vs-uulm/ztsfc_http_pdp/internal/app/config"
 	ini "github.com/vs-uulm/ztsfc_http_pdp/internal/app/init"
@@ -64,13 +64,13 @@ func init() {
 	}
 
 	// GRAYLOG HOOK WILL BE DELTED AFTER PROJECT DEMO
-	hook, err := logrus_syslog.NewSyslogHookTls("bwnet-srv3-1g.informatik.uni-ulm.de:1515", racksec_syslog.LOG_DEBUG, "tag", "./certs/graylog.pem", false)
+	//hook, err := logrus_syslog.NewSyslogHookTls("bwnet-srv3-1g.informatik.uni-ulm.de:1515", racksec_syslog.LOG_DEBUG, "tag", "./certs/graylog.pem", false)
 
-	if err == nil {
-		sysLogger.AddHook(hook)
-	} else {
-		sysLogger.Infof("Error occured: %v", err)
-	}
+	//if err == nil {
+	//	sysLogger.AddHook(hook)
+	//} else {
+	//	sysLogger.Infof("Error occured: %v", err)
+	//}
 
 	sysLogger.Info("main: init(): initialization process successfully completed")
 }

@@ -20,8 +20,7 @@ func EvaluateACLRules(sysLogger *logger.Logger, cpm *md.Cp_metadata, user *rattr
 	// Checks if the user has too many failed Auth* attempts already (failed attempts > 3)
 	// This is also done by the PEP to dont give away information if password was correct or not
 	// For User
-	// JUST 30 FOR DEMONSTRATION
-	if user.FailedAuthAttempts > 300 {
+	if user.FailedAuthAttempts > 3 {
 		sysLogger.Infof("authorization: PerformAuthorization(): Requested was rejected since user account has been suspended")
 		authDecision = false
 		feedback = "You user account has been suspended"
