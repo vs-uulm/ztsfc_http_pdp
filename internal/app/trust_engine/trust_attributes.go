@@ -210,7 +210,7 @@ func upToDateSoftwarePatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) b
 			return false
 		}
 	case ua.Firefox:
-		if agent.VersionNo.Major < 113 {
+		if agent.VersionNo.Major < 91 {
 			return false
 		}
 	case ua.Chrome:

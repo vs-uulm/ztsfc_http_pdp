@@ -33,6 +33,8 @@ func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.
 	// Checks User Attribute "Password Authentication"
 	if !allowedUserAuthentationMethod(sysLogger, cpm) {
 		authDecision = false
+		sysLogger.WithFields(logger.Fields{"user": cpm.User, "reason": "User trust score is too low", "explanation": "user is not sufficiently authenticated for service", "service": cpm.Resource, "outcome": "user access denied"}).Debugf("")
+		//sysLogger.Debugf("Trust score for user %s is too low: user is not sufficiently authenticated!", cpm.User)
 		feedback = fmt.Sprintf("User %s is not correctly authenticated for the requested service", cpm.User)
 		return
 	}
@@ -77,6 +79,7 @@ func performCriteriaBasedBinaryUserAttributes(sysLogger *logger.Logger, cpm *md.
 
 	authDecision = true
 	feedback = "sussesfull"
+	sysLogger.WithFields(logger.Fields{"user": cpm.User, "reason": "User trust score is high enough", "explanation": "", "outcome": "user access permitted", "service": cpm.Resource}).Debugf("")
 	return
 }
 
@@ -85,6 +88,8 @@ func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *m
 	// Checks Device Attribute "Certificate Authentication"
 	if !allowedDeviceAuthentationMethod(sysLogger, cpm, device) {
 		authDecision = false
+		sysLogger.WithFields(logger.Fields{"device": cpm.Device, "reason": "Device trust score is too low", "explanation": "device is not sufficiently authenticated for service", "service": cpm.Resource, "outcome": "device access denied"}).Debugf("")
+		//sysLogger.Debugf("Device trust score for device %s is too low: device is not sufficiently authenticated for service  %s!", cpm.Device, cpm.Resource)
 		feedback = fmt.Sprintf("Device %s is not correctly authenticated for the requested service", cpm.Device)
 		return
 	}
@@ -117,12 +122,13 @@ func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *m
 		return
 	}
 
+	// JUST FOR DEMONSTRATION
 	// Check Device Attribute "Connection Security"
-	if !isSecureConnection(sysLogger, cpm) {
-		authDecision = false
-		feedback = fmt.Sprintf("Device %s is using a insecure connection", cpm.Device)
-		return
-	}
+	//if !isSecureConnection(sysLogger, cpm) {
+	//	authDecision = false
+	//	feedback = fmt.Sprintf("Device %s is using a insecure connection", cpm.Device)
+	//	return
+	//}
 
 	// Check Device Attribute "Software Patch Level"
 	if !upToDateSoftwarePatchLevel(sysLogger, cpm) {
@@ -154,17 +160,19 @@ func performCriteriaBasedBinaryDeviceAttributes(sysLogger *logger.Logger, cpm *m
 
 	authDecision = true
 	feedback = "sussesfull"
+	sysLogger.WithFields(logger.Fields{"device": cpm.Device, "reason": "Device trust score is high enough", "explanation": "", "outcome": "device access permitted", "service": cpm.Resource}).Debugf("")
 	return
 }
 
 func performCriteriaBasedBinaryCCAttributes(sysLogger *logger.Logger, cpm *md.Cp_metadata) (authDecision bool, feedback string) {
 
+	// JUST FOR DEMONSTRATION
 	// Check CC Attributes "Authenticated, Integrity Protected and Confidential"
-	if !isSecureConnection(sysLogger, cpm) {
-		authDecision = false
-		feedback = fmt.Sprintf("Communication channel is not sufficiently authenticated, integrity protected or confidential")
-		return
-	}
+	//if !isSecureConnection(sysLogger, cpm) {
+	//	authDecision = false
+	//	feedback = fmt.Sprintf("Communication channel is not sufficiently authenticated, integrity protected or confidential")
+	//	return
+	//}
 
 	authDecision = true
 	feedback = "sussesfull"
