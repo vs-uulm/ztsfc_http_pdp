@@ -206,7 +206,7 @@ func upToDateSoftwarePatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) b
 	switch agent.Name {
 	case ua.Safari:
 		// sysLogger.Debugf("Software Patch Level For User %s: %d", cpm.User, agent.VersionNo.Major)
-		if agent.VersionNo.Major < 16 {
+		if agent.VersionNo.Major < 17 {
 			return false
 		}
 	case ua.Firefox:
