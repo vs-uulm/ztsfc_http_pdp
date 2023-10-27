@@ -241,21 +241,23 @@ func upToDateSystemPatchLevel(sysLogger *logger.Logger, cpm *md.Cp_metadata) boo
 			return false
 		}
 	case ua.Android:
+		sysLogger.Debugf("Presented Android Version is:  %d", agent.OSVersionNo.Major)
 		if agent.OSVersionNo.Major < 13 {
 			return false
 		}
 	case ua.MacOS:
+		sysLogger.Debugf("Presented macOS Version is: %d", agent.OSVersionNo.Major)
 		if agent.OSVersionNo.Major < 10 || agent.OSVersionNo.Minor < 15 {
 			return false
 		}
 	case ua.IOS:
+		sysLogger.Debugf("Presented iOS Version is: %d", agent.OSVersionNo.Major)
 		if agent.OSVersionNo.Major < 16 {
-			sysLogger.Debugf("Presented iOS Version is: %d", agent.OSVersionNo.Major)
 			return false
 		}
 	case ua.Linux:
+		sysLogger.Debugf("Presented Linux Version is: %d", agent.OSVersionNo.Major)
 		if agent.OSVersionNo.Major != 0 {
-			sysLogger.Debugf("Presented Linux Version is: %d", agent.OSVersionNo.Major)
 			return false
 		}
 	default:
